@@ -1,0 +1,13 @@
+using System;
+
+namespace Shroud;
+
+[AttributeUsage(AttributeTargets.Interface, AllowMultiple = false)]
+public sealed class DecorateAttribute : Attribute
+{
+    public Type[] Types { get; }
+    public DecorateAttribute(params Type[] types)
+    {
+        Types = types;
+    }
+}

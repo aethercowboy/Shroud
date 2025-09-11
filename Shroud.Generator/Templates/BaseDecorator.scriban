@@ -1,0 +1,22 @@
+using System;
+using System.Threading.Tasks;
+
+namespace Shroud;
+
+public abstract class BaseDecorator<T>
+{
+    protected readonly T _decorated;
+
+    protected BaseDecorator(T decorated)
+    {
+        _decorated = decorated;
+	}
+
+    protected virtual void PreAction(string methodName, object[] args) { }
+    protected virtual void PostAction(string methodName, object[] args, object result) { }
+    protected virtual void ErrorAction(string methodName, object[] args, Exception ex) { }
+
+    protected virtual Task PreActionAsync(string methodName, object[] args) => Task.CompletedTask;
+    protected virtual Task PostActionAsync(string methodName, object[] args, object result) => Task.CompletedTask;
+    protected virtual Task ErrorActionAsync(string methodName, object[] args, Exception ex) => Task.CompletedTask;
+}
