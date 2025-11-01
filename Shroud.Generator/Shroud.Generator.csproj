@@ -7,6 +7,15 @@
 		<LangVersion>latest</LangVersion>
 		<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
 		<PackageScribanIncludeSource>true</PackageScribanIncludeSource>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<PackageId>Shroud</PackageId>
+		<Authors>aethercowboy</Authors>
+		<Description>Shroud Generator package.</Description>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+		<PackageProjectUrl>https://github.com/aethercowboy/Shroud</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/aethercowboy/Shroud</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageTags>shroud;generator;codegeneration;decorator</PackageTags>
 	</PropertyGroup>
 
 	<ItemGroup>
