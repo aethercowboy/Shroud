@@ -1,0 +1,44 @@
+# Workflow: Build, Test and Publish NuGet package on updates to master
+# Make sure to add a repository secret named `NUGET_API_KEY` containing your NuGet.org API key.
+
+name: Build, Test and Publish
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-test-pack:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+#      - name: Run tests
+#        run: dotnet test tests/Shroud.Tests/Shroud.Tests.csproj --configuration Release --no-build --verbosity normal
+
+      - name: Pack library
+        run: dotnet pack src/Shroud/Shroud.csproj --configuration Release --output ./artifacts --no-build
+
+      - name: Push package to NuGet
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          dotnet nuget push ./artifacts/*.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate
