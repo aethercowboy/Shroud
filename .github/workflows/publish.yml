@@ -23,7 +23,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: '9.0.x'
 
       - name: Restore
         run: dotnet restore
@@ -35,7 +35,7 @@ jobs:
 #        run: dotnet test tests/Shroud.Tests/Shroud.Tests.csproj --configuration Release --no-build --verbosity normal
 
       - name: Pack library
-        run: dotnet pack src/Shroud/Shroud.csproj --configuration Release --output ./artifacts --no-build
+        run: dotnet pack Shroud.Generator/Shroud.Generator.csproj --configuration Release --output ./artifacts --no-build
 
       - name: Push package to NuGet
         env:
