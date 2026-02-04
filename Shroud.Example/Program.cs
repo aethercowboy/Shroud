@@ -11,7 +11,7 @@ var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddHostedService<Worker>();
 builder.Services.AddSingleton<IExampleService, ExampleService>();
 builder.Services.AddSingleton<IAuditSink, ConsoleAuditSink>();
-builder.Services.RegisterDecorator<GlobalDecorator<>, IExampleService>();
+builder.Services.RegisterDecorator(typeof(GlobalDecorator<>), typeof(IExampleService));
 builder.Services.Enshroud();
 
 var host = builder.Build();

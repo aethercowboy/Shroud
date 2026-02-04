@@ -103,7 +103,7 @@ builder.Services.AddScoped<IMyService, MyService>();
 // ...
 
 // register a decorator for a specific interface
-builder.Services.RegisterDecorator<AuditDecorator<>, IMyService>();
+builder.Services.RegisterDecorator(typeof(AuditDecorator<>), typeof(IMyService));
 
 // register shroud
 builder.Services.Enshroud(); 
