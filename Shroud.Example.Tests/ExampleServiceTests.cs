@@ -95,6 +95,7 @@ public class ExampleServiceTests
 	{
 		var services = new ServiceCollection();
 		services.AddLogging();
+		services.AddSingleton<IAuditSink, TestAuditSink>();
 		services.AddSingleton<IExampleService, ExampleService>();
 		services.Enshroud();
 
@@ -144,24 +145,14 @@ public class ExampleServiceTests
 	public void AuditDecorator_OnlyAppliesToDecoratedMethods()
 	{
 		var decorated = new TrackingExampleService();
-		var audit = new IExampleServiceAuditDecorator(decorated);
-		var writer = new StringWriter();
-		var original = Console.Out;
-		Console.SetOut(writer);
+		var sink = new TestAuditSink();
+		var audit = new IExampleServiceAuditDecorator(decorated, sink);
 
-		try
-		{
-			audit.Add(3, 4);
-			audit.PrintMessage("Audit me");
-		}
-		finally
-		{
-			Console.SetOut(original);
-		}
+		audit.Add(3, 4);
+		audit.PrintMessage("Audit me");
 
-		var output = writer.ToString();
-		Assert.DoesNotContain("Add", output, StringComparison.Ordinal);
-		Assert.Contains("[Audit] Calling PrintMessage", output, StringComparison.Ordinal);
+		Assert.DoesNotContain("Add", sink.Messages, StringComparer.Ordinal);
+		Assert.Contains("[Audit] Calling PrintMessage", sink.Messages, StringComparer.Ordinal);
 	}
 
 	[Fact]
@@ -255,6 +246,16 @@ public class ExampleServiceTests
 		private sealed class NullScope : IDisposable
 		{
 			public void Dispose() { }
+		}
+	}
+
+	private sealed class TestAuditSink : IAuditSink
+	{
+		public List<string> Messages { get; } = new();
+
+		public void Write(string message)
+		{
+			Messages.Add(message);
 		}
 	}
 }

@@ -9,6 +9,7 @@ var builder = Host.CreateApplicationBuilder(args);
 // configure services here
 builder.Services.AddHostedService<Worker>();
 builder.Services.AddSingleton<IExampleService, ExampleService>();
+builder.Services.AddSingleton<IAuditSink, ConsoleAuditSink>();
 builder.Services.Enshroud();
 
 var host = builder.Build();

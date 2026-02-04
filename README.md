@@ -109,6 +109,42 @@ builder.Services.Enshroud();
 This will take all your decorated interfaces and wrap them in the decorators in the order you
 specified.
 
+## Constructor dependencies in decorators
+
+Decorators can take additional constructor dependencies, and Shroud will resolve them from the
+service provider when building the decorator chain. For example:
+
+```cs
+public interface IAuditSink
+{
+    void Write(string message);
+}
+
+public sealed class ConsoleAuditSink : IAuditSink
+{
+    public void Write(string message) => Console.WriteLine(message);
+}
+
+public sealed class AuditDecorator<T> : BaseDecorator<T>
+{
+    private readonly IAuditSink _auditSink;
+
+    public AuditDecorator(T decorated, IAuditSink auditSink) : base(decorated)
+    {
+        _auditSink = auditSink;
+    }
+
+    protected override void PreAction(string methodName, object[] args)
+    {
+        _auditSink.Write($"[Audit] {methodName}");
+    }
+}
+```
+
+```cs
+builder.Services.AddSingleton<IAuditSink, ConsoleAuditSink>();
+```
+
 # Things Shroud Does Not (Currently) Do
 
 * **Support partials** You cannot create a partial decorator with special logic for a specific method.
