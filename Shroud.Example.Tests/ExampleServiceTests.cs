@@ -7,6 +7,7 @@ using Xunit;
 
 namespace Shroud.Example.Tests;
 
+[Collection("Console")]
 public class ExampleServiceTests
 {
 	[Fact]
