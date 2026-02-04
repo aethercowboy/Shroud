@@ -111,7 +111,6 @@ namespace Shroud.Generator
 			{
 				if (registration.ServiceType == null)
 				{
-					yield return ToDisplayStringNoGlobal(registration.DecoratorType);
 					continue;
 				}
 
@@ -173,7 +172,7 @@ namespace Shroud.Generator
 
 			return nameSyntax is GenericNameSyntax generic &&
 				generic.Identifier.Text == "RegisterDecorator" &&
-				(generic.TypeArgumentList.Arguments.Count == 1 || generic.TypeArgumentList.Arguments.Count == 2);
+				generic.TypeArgumentList.Arguments.Count == 2;
 		}
 
 		private static DecoratorRegistrationInfo? GetRegistrationInfo(GeneratorSyntaxContext context)
@@ -196,7 +195,7 @@ namespace Shroud.Generator
 			}
 
 			var typeArguments = genericName.TypeArgumentList.Arguments;
-			if (typeArguments.Count is < 1 or > 2)
+			if (typeArguments.Count != 2)
 			{
 				return null;
 			}
@@ -207,11 +206,7 @@ namespace Shroud.Generator
 				return null;
 			}
 
-			INamedTypeSymbol? serviceType = null;
-			if (typeArguments.Count == 2)
-			{
-				serviceType = context.SemanticModel.GetTypeInfo(typeArguments[1]).Type as INamedTypeSymbol;
-			}
+			var serviceType = context.SemanticModel.GetTypeInfo(typeArguments[1]).Type as INamedTypeSymbol;
 
 			return new DecoratorRegistrationInfo(decoratorType, serviceType);
 		}

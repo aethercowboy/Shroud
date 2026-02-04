@@ -102,8 +102,7 @@ Finally, you must register the decorators.
 builder.Services.AddScoped<IMyService, MyService>();
 // ...
 
-// register a decorator for all services (or for a specific interface)
-builder.Services.RegisterDecorator<LoggingDecorator<>>();
+// register a decorator for a specific interface
 builder.Services.RegisterDecorator<AuditDecorator<>, IMyService>();
 
 // register shroud
