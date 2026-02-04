@@ -132,7 +132,7 @@ namespace Test
 			references,
 			new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
-		var driver = CSharpGeneratorDriver.Create(generator.AsSourceGenerator());
+		GeneratorDriver driver = CSharpGeneratorDriver.Create(generator.AsSourceGenerator());
 		driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out _, out _);
 		return driver.GetRunResult();
 	}
