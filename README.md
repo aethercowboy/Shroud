@@ -10,7 +10,11 @@ it handles the rest for you.
 
 # Installing
 
-Coming Soon...
+Install the pre-release NuGet package:
+
+```bash
+dotnet add package Shroud --prerelease
+```
 
 # Usage
 
