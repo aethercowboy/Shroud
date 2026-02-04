@@ -20,42 +20,37 @@ namespace Shroud.Generator
 		{
 			var interfaceDeclarations = context.SyntaxProvider
 				.CreateSyntaxProvider(
-					predicate: static (node, _) => node is InterfaceDeclarationSyntax ids && ids.AttributeLists.Count > 0,
+					predicate: static (node, _) =>
+						node is InterfaceDeclarationSyntax ids &&
+						(ids.AttributeLists.Count > 0 ||
+						 ids.Members.OfType<MethodDeclarationSyntax>().Any(m => m.AttributeLists.Count > 0)),
 					transform: (ctx, _) =>
 					{
 						var ids = (InterfaceDeclarationSyntax)ctx.Node;
 						var symbol = ctx.SemanticModel.GetDeclaredSymbol(ids) as INamedTypeSymbol;
-						var decorateAttr = symbol?.GetAttributes().FirstOrDefault(a =>
-							a.AttributeClass?.ToDisplayString() == "Shroud.DecorateAttribute");
-						if (decorateAttr == null) return System.Collections.Immutable.ImmutableArray<(INamedTypeSymbol, string, Compilation)>.Empty;
+						if (symbol == null) return ImmutableArray<(INamedTypeSymbol, string, Compilation)>.Empty;
 
 						var compilation = ctx.SemanticModel.Compilation;
-						var decoratorTypes = new List<string>();
-						if (decorateAttr.ConstructorArguments.Length > 0)
+						var interfaceDecoratorTypes = GetDecoratorTypes(symbol);
+						var methodDecoratorTypes = symbol.GetMembers()
+							.OfType<IMethodSymbol>()
+							.Where(m => m.MethodKind == MethodKind.Ordinary)
+							.SelectMany(GetDecoratorTypes)
+							.ToList();
+
+						var allDecoratorTypes = interfaceDecoratorTypes
+							.Concat(methodDecoratorTypes)
+							.Distinct()
+							.ToList();
+
+						if (allDecoratorTypes.Count == 0)
 						{
-							var arg = decorateAttr.ConstructorArguments[0];
-							if (arg.Kind == TypedConstantKind.Array)
-							{
-								foreach (var v in arg.Values)
-								{
-									var typeStr = v.Value?.ToString();
-									if (!string.IsNullOrEmpty(typeStr))
-										decoratorTypes.Add(typeStr);
-								}
-							}
-							else
-							{
-								var typeStr = arg.Value?.ToString();
-								if (!string.IsNullOrEmpty(typeStr))
-									decoratorTypes.Add(typeStr);
-							}
+							return ImmutableArray<(INamedTypeSymbol, string, Compilation)>.Empty;
 						}
-						var interfaceName = symbol.Name;
-						if (interfaceName.StartsWith("I") && interfaceName.Length > 1 && char.IsUpper(interfaceName[1]))
-						{
-							interfaceName = interfaceName.Substring(1);
-						}
-						return decoratorTypes.Select(decoratorType => (symbol, decoratorType, compilation)).ToImmutableArray();
+
+						return allDecoratorTypes
+							.Select(decoratorType => (symbol, decoratorType, compilation))
+							.ToImmutableArray();
 					})
 				.SelectMany(static (x, _) => x)
 				.Where(x => x != default);
@@ -111,11 +106,15 @@ namespace Shroud.Generator
 
 				// Prepare method data for template
 				var methods = new List<object>();
+				var interfaceDecoratorTypes = GetDecoratorTypes(symbol);
 				foreach (var member in symbol.GetMembers().OfType<IMethodSymbol>())
 				{
 					if (member.MethodKind != MethodKind.Ordinary)
 						continue;
 					var methodName = member.Name;
+					var methodDecoratorTypes = GetDecoratorTypes(member);
+					var shouldDecorate = interfaceDecoratorTypes.Contains(decoratorTypeName) ||
+						methodDecoratorTypes.Contains(decoratorTypeName);
 					var parameters = member.Parameters.Select(p => $"{p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)} {p.Name}");
 					var paramList = string.Join(", ", parameters);
 					var argList = string.Join(", ", member.Parameters.Select(p => p.Name));
@@ -124,7 +123,7 @@ namespace Shroud.Generator
 					var isAsync = returnType.StartsWith("global::System.Threading.Tasks.Task");
 					var isTaskOfT = isAsync && member.ReturnType is INamedTypeSymbol nts && nts.TypeArguments.Length == 1;
 					var isTask = isAsync && !isTaskOfT;
-					var asyncModifier = isAsync ? "async " : "";
+					var asyncModifier = isAsync && shouldDecorate ? "async " : "";
 					var preAction = isAsync ? "await PreActionAsync" : "PreAction";
 					var postAction = isAsync ? "await PostActionAsync" : "PostAction";
 					var errorAction = isAsync ? "await ErrorActionAsync" : "ErrorAction";
@@ -132,12 +131,16 @@ namespace Shroud.Generator
 					string callDecorated;
 					string postResult;
 					string returnResult;
+					string plainCall;
+					string plainReturn;
 					if (member.ReturnsVoid)
 					{
 						resultDecl = "";
 						callDecorated = $"_decorated.{methodName}({argList});";
 						postResult = "null";
 						returnResult = "";
+						plainCall = callDecorated;
+						plainReturn = "";
 					}
 					else if (isTask)
 					{
@@ -145,6 +148,8 @@ namespace Shroud.Generator
 						callDecorated = resultDecl;
 						postResult = "null";
 						returnResult = "return;";
+						plainCall = $"return _decorated.{methodName}({argList});";
+						plainReturn = "";
 					}
 					else if (isTaskOfT)
 					{
@@ -152,6 +157,8 @@ namespace Shroud.Generator
 						callDecorated = resultDecl;
 						postResult = "result";
 						returnResult = "return result;";
+						plainCall = $"return _decorated.{methodName}({argList});";
+						plainReturn = "";
 					}
 					else
 					{
@@ -159,6 +166,8 @@ namespace Shroud.Generator
 						callDecorated = resultDecl;
 						postResult = "result";
 						returnResult = "return result;";
+						plainCall = $"return _decorated.{methodName}({argList});";
+						plainReturn = "";
 					}
 					methods.Add(new
 					{
@@ -167,12 +176,16 @@ namespace Shroud.Generator
 						args_array = argsArray,
 						return_type = returnType,
 						is_async = isAsync,
+						should_decorate = shouldDecorate,
+						async_modifier = asyncModifier,
 						pre_action = preAction,
 						post_action = postAction,
 						error_action = errorAction,
 						call_decorated = callDecorated,
 						post_result = postResult,
-						return_result = returnResult
+						return_result = returnResult,
+						plain_call = plainCall,
+						plain_return = plainReturn
 					});
 				}
 
@@ -202,6 +215,35 @@ namespace Shroud.Generator
 			var baseName = idx >= 0 ? name.Substring(0, idx) : name;
 			var lastDot = baseName.LastIndexOf('.');
 			return lastDot >= 0 ? baseName.Substring(lastDot + 1) : baseName;
+		}
+
+		private static List<string> GetDecoratorTypes(ISymbol symbol)
+		{
+			var decoratorTypes = new List<string>();
+			foreach (var decorateAttr in symbol.GetAttributes().Where(a =>
+						 a.AttributeClass?.ToDisplayString() == "Shroud.DecorateAttribute"))
+			{
+				if (decorateAttr.ConstructorArguments.Length > 0)
+				{
+					var arg = decorateAttr.ConstructorArguments[0];
+					if (arg.Kind == TypedConstantKind.Array)
+					{
+						foreach (var v in arg.Values)
+						{
+							var typeStr = v.Value?.ToString();
+							if (!string.IsNullOrEmpty(typeStr))
+								decoratorTypes.Add(typeStr);
+						}
+					}
+					else
+					{
+						var typeStr = arg.Value?.ToString();
+						if (!string.IsNullOrEmpty(typeStr))
+							decoratorTypes.Add(typeStr);
+					}
+				}
+			}
+			return decoratorTypes;
 		}
 	}
 }

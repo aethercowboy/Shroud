@@ -17,36 +17,34 @@ namespace Shroud.Generator
 		{
 			var interfaceDeclarations = context.SyntaxProvider
 				.CreateSyntaxProvider(
-					predicate: static (node, _) => node is InterfaceDeclarationSyntax ids && ids.AttributeLists.Count > 0,
+					predicate: static (node, _) =>
+						node is InterfaceDeclarationSyntax ids &&
+						(ids.AttributeLists.Count > 0 ||
+						 ids.Members.OfType<MethodDeclarationSyntax>().Any(m => m.AttributeLists.Count > 0)),
 					transform: (ctx, _) =>
 					{
 						var ids = (InterfaceDeclarationSyntax)ctx.Node;
 						var symbol = ctx.SemanticModel.GetDeclaredSymbol(ids) as INamedTypeSymbol;
-						var decorateAttr = symbol?.GetAttributes().FirstOrDefault(a =>
-							a.AttributeClass?.ToDisplayString() == "Shroud.DecorateAttribute");
-						if (decorateAttr == null) return (null, (List<string>)null, ctx.SemanticModel.Compilation);
+						if (symbol == null) return (null, (List<string>)null, ctx.SemanticModel.Compilation);
 
-						var decoratorTypes = new List<string>();
-						if (decorateAttr.ConstructorArguments.Length > 0)
+						var decoratorTypes = GetDecoratorTypes(symbol);
+						var methodDecoratorTypes = symbol.GetMembers()
+							.OfType<IMethodSymbol>()
+							.Where(m => m.MethodKind == MethodKind.Ordinary)
+							.SelectMany(GetDecoratorTypes)
+							.ToList();
+
+						var allDecoratorTypes = decoratorTypes
+							.Concat(methodDecoratorTypes)
+							.Distinct()
+							.ToList();
+
+						if (allDecoratorTypes.Count == 0)
 						{
-							var arg = decorateAttr.ConstructorArguments[0];
-							if (arg.Kind == TypedConstantKind.Array)
-							{
-								foreach (var v in arg.Values)
-								{
-									var typeStr = v.Value?.ToString();
-									if (!string.IsNullOrEmpty(typeStr))
-										decoratorTypes.Add(typeStr);
-								}
-							}
-							else
-							{
-								var typeStr = arg.Value?.ToString();
-								if (!string.IsNullOrEmpty(typeStr))
-									decoratorTypes.Add(typeStr);
-							}
+							return (null, (List<string>)null, ctx.SemanticModel.Compilation);
 						}
-						return (symbol, decoratorTypes, ctx.SemanticModel.Compilation);
+
+						return (symbol, allDecoratorTypes, ctx.SemanticModel.Compilation);
 					})
 				.Where(x => x.symbol != null)
 				.Collect();
@@ -103,6 +101,35 @@ namespace Shroud.Generator
 				string source = template.Render(scribanContext);
 				spc.AddSource("ShroudExtensions.g.cs", SourceText.From(source, Encoding.UTF8));
 			});
+		}
+
+		private static List<string> GetDecoratorTypes(ISymbol symbol)
+		{
+			var decoratorTypes = new List<string>();
+			foreach (var decorateAttr in symbol.GetAttributes().Where(a =>
+						 a.AttributeClass?.ToDisplayString() == "Shroud.DecorateAttribute"))
+			{
+				if (decorateAttr.ConstructorArguments.Length > 0)
+				{
+					var arg = decorateAttr.ConstructorArguments[0];
+					if (arg.Kind == TypedConstantKind.Array)
+					{
+						foreach (var v in arg.Values)
+						{
+							var typeStr = v.Value?.ToString();
+							if (!string.IsNullOrEmpty(typeStr))
+								decoratorTypes.Add(typeStr);
+						}
+					}
+					else
+					{
+						var typeStr = arg.Value?.ToString();
+						if (!string.IsNullOrEmpty(typeStr))
+							decoratorTypes.Add(typeStr);
+					}
+				}
+			}
+			return decoratorTypes;
 		}
 	}
 }
