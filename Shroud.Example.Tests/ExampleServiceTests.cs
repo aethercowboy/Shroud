@@ -102,12 +102,13 @@ public class ExampleServiceTests
 		using var provider = services.BuildServiceProvider();
 		var service = provider.GetRequiredService<IExampleService>();
 
-		Assert.IsType<IExampleServiceAuditDecorator>(service);
+		Assert.IsType<IExampleServiceGlobalDecorator>(service);
 		var chain = GetDecoratorChain(service);
 
 		Assert.Equal(
 			new[]
 			{
+				nameof(IExampleServiceGlobalDecorator),
 				nameof(IExampleServiceAuditDecorator),
 				nameof(IExampleServiceTimingDecorator),
 				nameof(IExampleServiceLoggingDecorator),
@@ -153,6 +154,28 @@ public class ExampleServiceTests
 
 		Assert.DoesNotContain("Add", sink.Messages, StringComparer.Ordinal);
 		Assert.Contains("[Audit] Calling PrintMessage", sink.Messages, StringComparer.Ordinal);
+	}
+
+	[Fact]
+	public void GlobalDecorator_WritesMessages()
+	{
+		var decorated = new TrackingExampleService();
+		var global = new IExampleServiceGlobalDecorator(decorated);
+		var writer = new StringWriter();
+		var original = Console.Out;
+		Console.SetOut(writer);
+
+		try
+		{
+			global.Add(1, 1);
+		}
+		finally
+		{
+			Console.SetOut(original);
+		}
+
+		var output = writer.ToString();
+		Assert.Contains("[Global] Calling Add", output, StringComparison.Ordinal);
 	}
 
 	[Fact]

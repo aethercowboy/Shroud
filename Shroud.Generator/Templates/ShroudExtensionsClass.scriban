@@ -5,6 +5,16 @@ namespace Shroud
 {
     public static class ShroudExtensions
     {
+        public static IServiceCollection RegisterDecorator<TDecorator>(this IServiceCollection services)
+        {
+            return services;
+        }
+
+        public static IServiceCollection RegisterDecorator<TDecorator, TService>(this IServiceCollection services)
+        {
+            return services;
+        }
+
         public static IServiceCollection Enshroud(this IServiceCollection services)
         {
             {{ for iface in interfaces }}

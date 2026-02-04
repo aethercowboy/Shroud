@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Shroud.Example;
+using Shroud.Example.Decorators;
 using Shroud.Example.Services;
 using Shroud;
 
@@ -10,6 +11,7 @@ var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddHostedService<Worker>();
 builder.Services.AddSingleton<IExampleService, ExampleService>();
 builder.Services.AddSingleton<IAuditSink, ConsoleAuditSink>();
+builder.Services.RegisterDecorator<GlobalDecorator<>>();
 builder.Services.Enshroud();
 
 var host = builder.Build();

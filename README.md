@@ -102,12 +102,20 @@ Finally, you must register the decorators.
 builder.Services.AddScoped<IMyService, MyService>();
 // ...
 
+// register a decorator for all services (or for a specific interface)
+builder.Services.RegisterDecorator<LoggingDecorator<>>();
+builder.Services.RegisterDecorator<AuditDecorator<>, IMyService>();
+
 // register shroud
 builder.Services.Enshroud(); 
 ```
 
 This will take all your decorated interfaces and wrap them in the decorators in the order you
 specified.
+
+> Note: `RegisterDecorator` is picked up by the source generator at build time. The call itself is
+> intentionally a no-op at runtime; it exists to declare which decorators should be generated and
+> applied by `Enshroud`.
 
 ## Constructor dependencies in decorators
 
@@ -148,6 +156,5 @@ builder.Services.AddSingleton<IAuditSink, ConsoleAuditSink>();
 # Things Shroud Does Not (Currently) Do
 
 * **Support partials** You cannot create a partial decorator with special logic for a specific method.
-* **Universal decorators** You cannot create a decorator that applies to all services of a certain type.
 
 If any of these are desired features, please open an issue.
