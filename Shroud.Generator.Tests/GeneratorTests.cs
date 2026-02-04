@@ -74,7 +74,7 @@ namespace Test
 		Assert.DoesNotContain("PreAction(\"Add\"", auditSource);
 		Assert.Contains("PreAction(\"Log\"", auditSource);
 		Assert.Contains("Test.ICalculator decorated", auditSource);
-		Assert.Contains("global::System.String label", auditSource);
+		Assert.Contains("string label", auditSource);
 	}
 
 	[Fact]
@@ -83,9 +83,9 @@ namespace Test
 		var runResult = RunGenerator(new ShroudExtensionGenerator(), AttributeSource + DecoratorSource);
 		var extensionsSource = GetGeneratedSource(runResult, "ShroudExtensions.g.cs");
 
-		var loggingIndex = extensionsSource.IndexOf("new Test.ICalculatorLoggingDecorator", StringComparison.Ordinal);
-		var timingIndex = extensionsSource.IndexOf("new Test.ICalculatorTimingDecorator", StringComparison.Ordinal);
-		var auditIndex = extensionsSource.IndexOf("new Test.ICalculatorAuditDecorator", StringComparison.Ordinal);
+		var loggingIndex = extensionsSource.IndexOf("new Shroud.Test.ICalculatorLoggingDecorator", StringComparison.Ordinal);
+		var timingIndex = extensionsSource.IndexOf("new Shroud.Test.ICalculatorTimingDecorator", StringComparison.Ordinal);
+		var auditIndex = extensionsSource.IndexOf("new Shroud.Test.ICalculatorAuditDecorator", StringComparison.Ordinal);
 
 		Assert.True(loggingIndex >= 0, "Logging decorator was not generated.");
 		Assert.True(timingIndex > loggingIndex, "Timing decorator should follow logging.");
