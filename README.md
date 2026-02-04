@@ -85,6 +85,26 @@ public interface IMyService
 This will generate a decorator class that implements the interface and extends the LoggingDecorator.
 The attribute accepts multiple decorators.
 
+## Interface inheritance
+
+Decorated interfaces can inherit from other interfaces. Shroud will generate decorators that
+implement inherited methods, and any decorators declared on base interfaces will be included in the
+decorator chain.
+
+```cs
+[Decorate(typeof(LoggingDecorator<>))]
+public interface IBaseService
+{
+    int Multiply(int a, int b);
+}
+
+[Decorate(typeof(TimingDecorator<>))]
+public interface IExampleService : IBaseService
+{
+    int Add(int a, int b);
+}
+```
+
 You can also decorate specific methods directly:
 
 ```cs

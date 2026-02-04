@@ -2,8 +2,13 @@
 
 namespace Shroud.Example.Services
 {
+	public interface IExampleBaseService
+	{
+		int Multiply(int a, int b);
+	}
+
 	[Decorate(typeof(LoggingDecorator<>), typeof(TimingDecorator<>))]
-	public interface IExampleService
+	public interface IExampleService : IExampleBaseService
 	{
 		int Add(int a, int b);
 
@@ -21,6 +26,11 @@ namespace Shroud.Example.Services
 
 	internal class ExampleService : IExampleService
 	{
+		int IExampleBaseService.Multiply(int a, int b)
+		{
+			return a * b;
+		}
+
 		int IExampleService.Add(int a, int b)
 		{
 			return a + b;

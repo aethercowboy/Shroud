@@ -56,6 +56,11 @@ namespace TestDecorators
 	{
 		public AuditDecorator(T decorated, string label) { }
 	}
+
+	public class MetricsDecorator<T>
+	{
+		public MetricsDecorator(T decorated) { }
+	}
 }
 
 namespace Test
@@ -74,7 +79,7 @@ namespace Test
 	}
 
 	[Decorate(typeof(TestDecorators.LoggingDecorator<>), typeof(TestDecorators.TimingDecorator<>))]
-	public interface ICalculator
+	public interface ICalculator : IBaseCalculator
 	{
 		int Add(int a, int b);
 
@@ -82,6 +87,12 @@ namespace Test
 		void Log(string message);
 
 		Task<int> AddAsync(int a, int b);
+	}
+
+	[Decorate(typeof(TestDecorators.MetricsDecorator<>))]
+	public interface IBaseCalculator
+	{
+		int Subtract(int a, int b);
 	}
 }
 """;
@@ -92,6 +103,7 @@ namespace Test
         var runResult = RunGenerator(new DecoratorGenerator(), AttributeSource + DecoratorSource);
         var loggingSource = GetGeneratedSource(runResult, "ICalculatorLoggingDecorator.g.cs");
         var auditSource = GetGeneratedSource(runResult, "ICalculatorAuditDecorator.g.cs");
+        var metricsSource = GetGeneratedSource(runResult, "ICalculatorMetricsDecorator.g.cs");
         var reporterSource = GetGeneratedSource(runResult, "IReporterAuditDecorator.g.cs");
 
         Assert.Contains("internal class ICalculatorLoggingDecorator", loggingSource);
@@ -103,6 +115,8 @@ namespace Test
         Assert.Contains("PreAction(\"Log\"", auditSource);
         Assert.Contains("Test.ICalculator decorated", auditSource);
         Assert.Contains("string label", auditSource);
+        Assert.Contains("internal class ICalculatorMetricsDecorator", metricsSource);
+        Assert.Contains("PreAction(\"Subtract\"", metricsSource);
         Assert.Contains("internal class IReporterAuditDecorator", reporterSource);
     }
 
@@ -115,11 +129,13 @@ namespace Test
         var loggingIndex = extensionsSource.IndexOf("ICalculatorLoggingDecorator", StringComparison.Ordinal);
         var timingIndex = extensionsSource.IndexOf("ICalculatorTimingDecorator", StringComparison.Ordinal);
         var auditIndex = extensionsSource.IndexOf("ICalculatorAuditDecorator", StringComparison.Ordinal);
+        var metricsIndex = extensionsSource.IndexOf("ICalculatorMetricsDecorator", StringComparison.Ordinal);
         var reporterIndex = extensionsSource.IndexOf("IReporterAuditDecorator", StringComparison.Ordinal);
 
         Assert.True(loggingIndex >= 0, "Logging decorator was not generated.");
         Assert.True(timingIndex > loggingIndex, "Timing decorator should follow logging.");
         Assert.True(auditIndex > timingIndex, "Audit decorator should be last in the chain.");
+        Assert.True(metricsIndex >= 0, "Metrics decorator was not generated.");
         Assert.True(reporterIndex >= 0, "Reporter decorator was not generated.");
         Assert.Contains("ActivatorUtilities.CreateInstance(sp, typeof", extensionsSource);
     }

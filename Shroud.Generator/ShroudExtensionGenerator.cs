@@ -46,10 +46,8 @@ namespace Shroud.Generator
                 foreach (var entry in interfaces)
                 {
                     var symbol = (INamedTypeSymbol)entry.symbol!;
-                    var decoratorTypes = GetDecoratorTypes(symbol);
-                    var methodDecoratorTypes = symbol.GetMembers()
-                        .OfType<IMethodSymbol>()
-                        .Where(m => m.MethodKind == MethodKind.Ordinary)
+                    var decoratorTypes = GetAllDecoratorTypes(symbol);
+                    var methodDecoratorTypes = GetAllInterfaceMethods(symbol)
                         .SelectMany(GetDecoratorTypes)
                         .ToList();
                     var registrationDecorators = GetRegistrationDecoratorTypes(symbol, registrations);
@@ -157,6 +155,50 @@ namespace Shroud.Generator
                 }
             }
             return decoratorTypes;
+        }
+
+        private static List<string> GetAllDecoratorTypes(INamedTypeSymbol symbol)
+        {
+            var decoratorTypes = new List<string>();
+            foreach (var iface in GetInterfaceHierarchy(symbol))
+            {
+                decoratorTypes.AddRange(GetDecoratorTypes(iface));
+            }
+            return decoratorTypes;
+        }
+
+        private static IEnumerable<IMethodSymbol> GetAllInterfaceMethods(INamedTypeSymbol symbol)
+        {
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var iface in GetInterfaceHierarchy(symbol))
+            {
+                foreach (var method in iface.GetMembers().OfType<IMethodSymbol>()
+                             .Where(m => m.MethodKind == MethodKind.Ordinary))
+                {
+                    var key = GetMethodKey(method);
+                    if (seen.Add(key))
+                    {
+                        yield return method;
+                    }
+                }
+            }
+        }
+
+        private static IEnumerable<INamedTypeSymbol> GetInterfaceHierarchy(INamedTypeSymbol symbol)
+        {
+            yield return symbol;
+            foreach (var iface in symbol.AllInterfaces)
+            {
+                yield return iface;
+            }
+        }
+
+        private static string GetMethodKey(IMethodSymbol method)
+        {
+            var parameters = string.Join(",",
+                method.Parameters.Select(p =>
+                    $"{p.RefKind}:{p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}"));
+            return $"{method.Name}`{method.Arity}({parameters})";
         }
 
         private static bool IsRegisterDecoratorInvocation(SyntaxNode node)
