@@ -94,6 +94,7 @@ public class ExampleServiceTests
 	public void Enshroud_WrapsServiceInExpectedDecoratorChain()
 	{
 		var services = new ServiceCollection();
+		services.AddLogging();
 		services.AddSingleton<IExampleService, ExampleService>();
 		services.Enshroud();
 
