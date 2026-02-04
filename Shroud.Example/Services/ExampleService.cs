@@ -9,6 +9,7 @@ namespace Shroud.Example.Services
 
 		Task<int> AddAsync(int a, int b, CancellationToken cancellationToken = default);
 
+		[Decorate(typeof(AuditDecorator<>))]
 		void PrintMessage(string message);
 
 		Task PrintMessageAsync(string message);

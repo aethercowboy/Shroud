@@ -85,6 +85,16 @@ public interface IMyService
 This will generate a decorator class that implements the interface and extends the LoggingDecorator.
 The attribute accepts multiple decorators.
 
+You can also decorate specific methods directly:
+
+```cs
+public interface IMyService
+{
+    [Decorate(typeof(LoggingDecorator<>))]
+    void DoSomething(string message);
+}
+```
+
 Finally, you must register the decorators.
 
 ```cs
@@ -102,7 +112,6 @@ specified.
 # Things Shroud Does Not (Currently) Do
 
 * **Support partials** You cannot create a partial decorator with special logic for a specific method.
-* **Decorated methods** You cannot decorate specific methods.
 * **Universal decorators** You cannot create a decorator that applies to all services of a certain type.
 
 If any of these are desired features, please open an issue.

@@ -9,8 +9,9 @@ namespace {{ ns }}
         {{ end }}
 
         {{ for method in methods }}
-        public {{ if method.is_async }}async {{ end }}{{ method.return_type }} {{ method.name }}({{ method.param_list }})
+        public {{ method.async_modifier }}{{ method.return_type }} {{ method.name }}({{ method.param_list }})
         {
+            {{ if method.should_decorate }}
             try
             {
                 {{ method.pre_action }}("{{ method.name }}", {{ method.args_array }});
@@ -23,6 +24,10 @@ namespace {{ ns }}
                 {{ method.error_action }}("{{ method.name }}", {{ method.args_array }}, e);
                 throw;
             }
+            {{ else }}
+            {{ method.plain_call }}
+            {{ if method.plain_return != "" }}{{ method.plain_return }}{{ end }}
+            {{ end }}
         }
         {{ end }}
     }
