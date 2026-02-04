@@ -70,15 +70,8 @@ namespace Shroud.Generator
 							decoratorTypeSimple = decoratorTypeSimple.Substring(0, decoratorTypeSimple.IndexOf('<'));
 						}
 						var concreteDecoratorTypeName = $"{interfaceNamespace}.{interfaceTypeShort}{decoratorTypeSimple}Decorator";
-						var decoratorArgs = new List<string> { $"({interfaceType})current" };
-						if (decoratorTypeSimple == "Logging")
-						{
-							decoratorArgs.Add($"sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<{interfaceType}>>()");
-						}
-						var argList = string.Join(", ", decoratorArgs);
 						decorators.Add(new {
-							type_name = concreteDecoratorTypeName,
-							args = argList
+							type_name = concreteDecoratorTypeName
 						});
 					}
 

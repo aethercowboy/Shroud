@@ -18,7 +18,7 @@ namespace Shroud
                     var impl = descriptor.ImplementationType != null ? ActivatorUtilities.CreateInstance(sp, descriptor.ImplementationType) : descriptor.ImplementationFactory != null ? descriptor.ImplementationFactory(sp) : descriptor.ImplementationInstance;
                     var current = impl;
                     {{ for decorator in iface.decorators }}
-                    current = new {{ decorator.type_name }}({{ decorator.args }});
+                    current = ActivatorUtilities.CreateInstance(sp, typeof({{ decorator.type_name }}), current);
                     {{ end }}
                     return ({{ iface.interface_type }})current;
                 }, descriptor.Lifetime));

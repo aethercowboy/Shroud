@@ -83,13 +83,14 @@ namespace Test
 		var runResult = RunGenerator(new ShroudExtensionGenerator(), AttributeSource + DecoratorSource);
 		var extensionsSource = GetGeneratedSource(runResult, "ShroudExtensions.g.cs");
 
-		var loggingIndex = extensionsSource.IndexOf("new Shroud.Test.ICalculatorLoggingDecorator", StringComparison.Ordinal);
-		var timingIndex = extensionsSource.IndexOf("new Shroud.Test.ICalculatorTimingDecorator", StringComparison.Ordinal);
-		var auditIndex = extensionsSource.IndexOf("new Shroud.Test.ICalculatorAuditDecorator", StringComparison.Ordinal);
+		var loggingIndex = extensionsSource.IndexOf("ICalculatorLoggingDecorator", StringComparison.Ordinal);
+		var timingIndex = extensionsSource.IndexOf("ICalculatorTimingDecorator", StringComparison.Ordinal);
+		var auditIndex = extensionsSource.IndexOf("ICalculatorAuditDecorator", StringComparison.Ordinal);
 
 		Assert.True(loggingIndex >= 0, "Logging decorator was not generated.");
 		Assert.True(timingIndex > loggingIndex, "Timing decorator should follow logging.");
 		Assert.True(auditIndex > timingIndex, "Audit decorator should be last in the chain.");
+		Assert.Contains("ActivatorUtilities.CreateInstance(sp, typeof", extensionsSource);
 	}
 
 	[Fact]
