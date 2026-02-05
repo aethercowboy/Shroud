@@ -5,20 +5,26 @@ namespace Shroud
 {
     public static class ShroudExtensions
     {
+        public static IServiceCollection RegisterDecorator(this IServiceCollection services, Type decoratorType, Type serviceType)
+        {
+            // Implementation placeholder
+            return services;
+        }
+
         public static IServiceCollection Enshroud(this IServiceCollection services)
         {
             {{ for iface in interfaces }}
             // Decorator stack for {{ iface.interface_type }}
-            var descriptors = services.Where(sd => sd.ServiceType == typeof({{ iface.interface_type }})).ToList();
+            var descriptors = services.Where(sd => sd.ServiceType == {{ iface.service_typeof }}).ToList();
             foreach (var descriptor in descriptors)
             {
                 services.Remove(descriptor);
-                services.Add(new ServiceDescriptor(typeof({{ iface.interface_type }}), sp =>
+                services.Add(new ServiceDescriptor({{ iface.service_typeof }}, sp =>
                 {
                     var impl = descriptor.ImplementationType != null ? ActivatorUtilities.CreateInstance(sp, descriptor.ImplementationType) : descriptor.ImplementationFactory != null ? descriptor.ImplementationFactory(sp) : descriptor.ImplementationInstance;
                     var current = impl;
                     {{ for decorator in iface.decorators }}
-                    current = new {{ decorator.type_name }}({{ decorator.args }});
+                    current = ActivatorUtilities.CreateInstance(sp, {{ decorator.decorator_typeof }}, current);
                     {{ end }}
                     return ({{ iface.interface_type }})current;
                 }, descriptor.Lifetime));
