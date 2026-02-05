@@ -83,6 +83,14 @@ namespace Test
 
 		Task<int> AddAsync(int a, int b);
 	}
+
+	public partial class ICalculatorLoggingDecorator
+	{
+		public int Add(int a, int b)
+		{
+			return a + b + 1;
+		}
+	}
 }
 """;
 
@@ -94,16 +102,17 @@ namespace Test
         var auditSource = GetGeneratedSource(runResult, "ICalculatorAuditDecorator.g.cs");
         var reporterSource = GetGeneratedSource(runResult, "IReporterAuditDecorator.g.cs");
 
-        Assert.Contains("internal class ICalculatorLoggingDecorator", loggingSource);
-        Assert.Contains("PreAction(\"Add\"", loggingSource);
-        Assert.Contains("PostAction(\"Add\"", loggingSource);
+        Assert.Contains("internal partial class ICalculatorLoggingDecorator", loggingSource);
+        Assert.DoesNotContain("int Add(", loggingSource);
+        Assert.Contains("PreAction(\"Log\"", loggingSource);
+        Assert.Contains("PostAction(\"AddAsync\"", loggingSource);
 
-        Assert.Contains("internal class ICalculatorAuditDecorator", auditSource);
+        Assert.Contains("internal partial class ICalculatorAuditDecorator", auditSource);
         Assert.DoesNotContain("PreAction(\"Add\"", auditSource);
         Assert.Contains("PreAction(\"Log\"", auditSource);
         Assert.Contains("Test.ICalculator decorated", auditSource);
         Assert.Contains("string label", auditSource);
-        Assert.Contains("internal class IReporterAuditDecorator", reporterSource);
+        Assert.Contains("internal partial class IReporterAuditDecorator", reporterSource);
     }
 
     [Fact]

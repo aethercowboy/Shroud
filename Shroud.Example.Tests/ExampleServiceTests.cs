@@ -133,6 +133,18 @@ public class ExampleServiceTests
     }
 
     [Fact]
+    public void LoggingDecorator_PartialImplementationOverridesGeneratedMethod()
+    {
+        var logger = new TestLogger<IExampleService>();
+        var decorated = new TrackingExampleService();
+        var logging = new IExampleServiceLoggingDecorator(decorated, logger);
+
+        var result = logging.Divide(2, 0);
+
+        Assert.Equal(0, result);
+    }
+
+    [Fact]
     public void LoggingDecorator_LogsErrors()
     {
         var logger = new TestLogger<IExampleService>();
@@ -230,6 +242,8 @@ public class ExampleServiceTests
 
         public Task<int> AddAsync(int a, int b, CancellationToken cancellationToken = default)
             => Task.FromResult(a + b);
+
+        public decimal Divide(decimal a, decimal b) => a / b;
 
         public void PrintMessage(string message)
         { }

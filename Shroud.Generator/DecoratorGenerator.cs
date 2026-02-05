@@ -130,12 +130,19 @@ namespace Shroud.Generator
                 var decoratorGeneric = $"{cleanDecoratorTypeName}<{interfaceFullName}>";
 
                 // Prepare method data for template
+                var existingMethodKeys = GetExistingMethodKeys(compilation, ns, className);
+
                 var methods = new List<object>();
                 var interfaceDecoratorTypes = GetDecoratorTypes(symbol);
                 foreach (var member in symbol.GetMembers().OfType<IMethodSymbol>())
                 {
                     if (member.MethodKind != MethodKind.Ordinary)
                         continue;
+                    if (existingMethodKeys.Contains(GetMethodKey(member)))
+                    {
+                        continue;
+                    }
+
                     var methodName = member.Name;
                     var methodDecoratorTypes = GetDecoratorTypes(member);
                     // Always decorate if this decorator is from registration
@@ -271,6 +278,36 @@ namespace Shroud.Generator
                 }
             }
             return decoratorTypes;
+        }
+
+        private static HashSet<string> GetExistingMethodKeys(Compilation compilation, string ns, string className)
+        {
+            var existingType = compilation.GetTypeByMetadataName($"{ns}.{className}");
+            if (existingType == null)
+            {
+                return new HashSet<string>(StringComparer.Ordinal);
+            }
+
+            var keys = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var method in existingType.GetMembers().OfType<IMethodSymbol>())
+            {
+                if (method.MethodKind != MethodKind.Ordinary || method.IsImplicitlyDeclared)
+                {
+                    continue;
+                }
+
+                keys.Add(GetMethodKey(method));
+            }
+
+            return keys;
+        }
+
+        private static string GetMethodKey(IMethodSymbol method)
+        {
+            var parameters = string.Join(",",
+                method.Parameters.Select(p =>
+                    $"{p.RefKind}:{p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}"));
+            return $"{method.Name}`{method.Arity}({parameters})";
         }
 
         private static IEnumerable<string> GetRegistrationDecoratorTypes(
