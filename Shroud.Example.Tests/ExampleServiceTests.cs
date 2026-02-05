@@ -22,16 +22,6 @@ public class ExampleServiceTests
     }
 
     [Fact]
-    public void Multiply_ReturnsProduct()
-    {
-        var service = new ExampleService();
-
-        var result = ((IExampleService)service).Multiply(2, 4);
-
-        Assert.Equal(8, result);
-    }
-
-    [Fact]
     public async Task AddAsync_ReturnsSum()
     {
         var service = new ExampleService();
@@ -143,6 +133,18 @@ public class ExampleServiceTests
     }
 
     [Fact]
+    public void LoggingDecorator_PartialImplementationOverridesGeneratedMethod()
+    {
+        var logger = new TestLogger<IExampleService>();
+        var decorated = new TrackingExampleService();
+        var logging = new IExampleServiceLoggingDecorator(decorated, logger);
+
+        var result = logging.Add(2, 2);
+
+        Assert.Equal(5, result);
+    }
+
+    [Fact]
     public void LoggingDecorator_LogsErrors()
     {
         var logger = new TestLogger<IExampleService>();
@@ -235,8 +237,6 @@ public class ExampleServiceTests
     private sealed class TrackingExampleService : IExampleService
     {
         public bool ThrowOnOmg { get; set; }
-
-        public int Multiply(int a, int b) => a * b;
 
         public int Add(int a, int b) => a + b;
 

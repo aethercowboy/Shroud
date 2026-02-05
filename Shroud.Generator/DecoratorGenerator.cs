@@ -56,8 +56,10 @@ namespace Shroud.Generator
                 }
 
                 var compilation = interfaceInfo.Compilation;
-                var interfaceDecoratorTypes = GetAllDecoratorTypes(symbol);
-                var methodDecoratorTypes = GetAllInterfaceMethods(symbol)
+                var interfaceDecoratorTypes = GetDecoratorTypes(symbol);
+                var methodDecoratorTypes = symbol.GetMembers()
+                    .OfType<IMethodSymbol>()
+                    .Where(m => m.MethodKind == MethodKind.Ordinary)
                     .SelectMany(GetDecoratorTypes)
                     .ToList();
                 var registrationDecoratorTypes = GetRegistrationDecoratorTypes(symbol, registrations).ToList();
@@ -128,10 +130,19 @@ namespace Shroud.Generator
                 var decoratorGeneric = $"{cleanDecoratorTypeName}<{interfaceFullName}>";
 
                 // Prepare method data for template
+                var existingMethodKeys = GetExistingMethodKeys(compilation, ns, className);
+
                 var methods = new List<object>();
-                var interfaceDecoratorTypes = GetAllDecoratorTypes(symbol);
-                foreach (var member in GetAllInterfaceMethods(symbol))
+                var interfaceDecoratorTypes = GetDecoratorTypes(symbol);
+                foreach (var member in symbol.GetMembers().OfType<IMethodSymbol>())
                 {
+                    if (member.MethodKind != MethodKind.Ordinary)
+                        continue;
+                    if (existingMethodKeys.Contains(GetMethodKey(member)))
+                    {
+                        continue;
+                    }
+
                     var methodName = member.Name;
                     var methodDecoratorTypes = GetDecoratorTypes(member);
                     // Always decorate if this decorator is from registration
@@ -269,40 +280,26 @@ namespace Shroud.Generator
             return decoratorTypes;
         }
 
-        private static List<string> GetAllDecoratorTypes(INamedTypeSymbol symbol)
+        private static HashSet<string> GetExistingMethodKeys(Compilation compilation, string ns, string className)
         {
-            var decoratorTypes = new List<string>();
-            foreach (var iface in GetInterfaceHierarchy(symbol))
+            var existingType = compilation.GetTypeByMetadataName($"{ns}.{className}");
+            if (existingType == null)
             {
-                decoratorTypes.AddRange(GetDecoratorTypes(iface));
+                return new HashSet<string>(StringComparer.Ordinal);
             }
-            return decoratorTypes;
-        }
 
-        private static IEnumerable<IMethodSymbol> GetAllInterfaceMethods(INamedTypeSymbol symbol)
-        {
-            var seen = new HashSet<string>(StringComparer.Ordinal);
-            foreach (var iface in GetInterfaceHierarchy(symbol))
+            var keys = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var method in existingType.GetMembers().OfType<IMethodSymbol>())
             {
-                foreach (var method in iface.GetMembers().OfType<IMethodSymbol>()
-                             .Where(m => m.MethodKind == MethodKind.Ordinary))
+                if (method.MethodKind != MethodKind.Ordinary || method.IsImplicitlyDeclared)
                 {
-                    var key = GetMethodKey(method);
-                    if (seen.Add(key))
-                    {
-                        yield return method;
-                    }
+                    continue;
                 }
-            }
-        }
 
-        private static IEnumerable<INamedTypeSymbol> GetInterfaceHierarchy(INamedTypeSymbol symbol)
-        {
-            yield return symbol;
-            foreach (var iface in symbol.AllInterfaces)
-            {
-                yield return iface;
+                keys.Add(GetMethodKey(method));
             }
+
+            return keys;
         }
 
         private static string GetMethodKey(IMethodSymbol method)

@@ -2,7 +2,7 @@
 using System;
 namespace {{ ns }}
 {
-    internal class {{ class_name }} : {{ base_class }}, {{ interface_full_name }}
+    internal partial class {{ class_name }} : {{ base_class }}, {{ interface_full_name }}
     {
         {{ if ctor_params.size > 0 }}
         public {{ class_name }}({{ ctor_params | array.join ', ' }}) : base({{ ctor_args | array.join ', ' }}) { }

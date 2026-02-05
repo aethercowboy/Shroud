@@ -85,23 +85,26 @@ public interface IMyService
 This will generate a decorator class that implements the interface and extends the LoggingDecorator.
 The attribute accepts multiple decorators.
 
-## Interface inheritance
+## Partial implementations
 
-Decorated interfaces can inherit from other interfaces. Shroud will generate decorators that
-implement inherited methods, and any decorators declared on base interfaces will be included in the
-decorator chain.
+Decorators can be partially implemented by declaring a partial class that matches the generated
+decorator type. Any methods you implement in the partial class will be left out of the generated
+decorator so you can provide custom logic.
 
 ```cs
-[Decorate(typeof(LoggingDecorator<>))]
-public interface IBaseService
+namespace MyApp.Services
 {
-    int Multiply(int a, int b);
-}
-
-[Decorate(typeof(TimingDecorator<>))]
-public interface IExampleService : IBaseService
-{
-    int Add(int a, int b);
+    public partial class IMyServiceLoggingDecorator
+    {
+        public int Add(int a, int b)
+        {
+            var args = new object[] { a, b };
+            PreAction(nameof(Add), args);
+            var result = _decorated.Add(a, b);
+            PostAction(nameof(Add), args, result);
+            return result;
+        }
+    }
 }
 ```
 
@@ -173,7 +176,5 @@ builder.Services.AddSingleton<IAuditSink, ConsoleAuditSink>();
 ```
 
 # Things Shroud Does Not (Currently) Do
-
-* **Support partials** You cannot create a partial decorator with special logic for a specific method.
 
 If any of these are desired features, please open an issue.
