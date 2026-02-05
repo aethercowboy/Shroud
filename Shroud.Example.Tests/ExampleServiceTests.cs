@@ -139,9 +139,9 @@ public class ExampleServiceTests
         var decorated = new TrackingExampleService();
         var logging = new IExampleServiceLoggingDecorator(decorated, logger);
 
-        var result = logging.Add(2, 2);
+        var result = logging.Divide(2, 0);
 
-        Assert.Equal(5, result);
+        Assert.Equal(0, result);
     }
 
     [Fact]
@@ -242,6 +242,8 @@ public class ExampleServiceTests
 
         public Task<int> AddAsync(int a, int b, CancellationToken cancellationToken = default)
             => Task.FromResult(a + b);
+
+        public decimal Divide(decimal a, decimal b) => a / b;
 
         public void PrintMessage(string message)
         { }
