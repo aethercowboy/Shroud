@@ -1,0 +1,21 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/Examples/">
+    <Project Path="example/Shroud.Example/Shroud.Example.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".gitignore" />
+    <File Path="LICENSE" />
+    <File Path="logo.png" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="test/Shroud.Example.Tests/Shroud.Example.Tests.csproj" />
+    <Project Path="test/Shroud.Generator.Tests/Shroud.Generator.Tests.csproj" />
+  </Folder>
+  <Project Path="src/Shroud.Generator/Shroud.Generator.csproj" />
+</Solution>
