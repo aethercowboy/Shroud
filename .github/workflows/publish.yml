@@ -31,11 +31,11 @@ jobs:
       - name: Build
         run: dotnet build --configuration Release --no-restore
 
-#      - name: Run tests
-#        run: dotnet test tests/Shroud.Tests/Shroud.Tests.csproj --configuration Release --no-build --verbosity normal
+#     - name: Run tests
+#       run: dotnet test tests/Shroud.Tests/Shroud.Tests.csproj --configuration Release --no-build --verbosity normal
 
       - name: Pack library
-        run: dotnet pack Shroud.Generator/Shroud.Generator.csproj --configuration Release --output ./artifacts --no-build
+        run: dotnet pack src/Shroud.Generator/Shroud.Generator.csproj --configuration Release --output ./artifacts --no-build
 
       - name: Push package to NuGet
         env:
