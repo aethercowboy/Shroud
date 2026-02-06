@@ -5,13 +5,13 @@ namespace Shroud
 {
     public static class ShroudExtensions
     {
-        public static IServiceCollection RegisterDecorator(this IServiceCollection services, Type decoratorType, Type serviceType)
+        internal static IServiceCollection RegisterDecorator(this IServiceCollection services, Type decoratorType, Type serviceType)
         {
             // Implementation placeholder
             return services;
         }
 
-        public static IServiceCollection Enshroud(this IServiceCollection services)
+        internal static IServiceCollection Enshroud(this IServiceCollection services)
         {
             {{ for iface in interfaces }}
             // Decorator stack for {{ iface.interface_type }}

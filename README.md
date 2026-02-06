@@ -13,7 +13,7 @@ it handles the rest for you.
 Install the pre-release NuGet package:
 
 ```bash
-dotnet add package Shroud --prerelease
+dotnet add package Shroud
 ```
 
 # Usage
