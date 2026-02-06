@@ -4,6 +4,9 @@ using Shroud.Example;
 using Shroud.Example.Decorators;
 using Shroud.Example.Services;
 using Shroud;
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("Shroud.Example.Tests")]
 
 var builder = Host.CreateApplicationBuilder(args);
 
