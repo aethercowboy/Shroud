@@ -137,8 +137,8 @@ namespace Test
         Assert.True(auditIndex > timingIndex, "Audit decorator should be last in the chain.");
         Assert.True(reporterIndex >= 0, "Reporter decorator was not generated.");
         Assert.Contains("ActivatorUtilities.CreateInstance(sp, typeof", extensionsSource);
-        Assert.Contains("{\n            // Decorator stack for Test.ICalculator", extensionsSource);
-        Assert.Contains("{\n            // Decorator stack for Test.IClock", extensionsSource);
+        Assert.Contains("{\n            // Decorator stack for global::Shroud.Test.ICalculator", extensionsSource);
+        Assert.Contains("{\n            // Decorator stack for global::Shroud.Test.IClock", extensionsSource);
     }
 
     [Fact]
