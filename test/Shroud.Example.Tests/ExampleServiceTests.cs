@@ -98,13 +98,16 @@ public class ExampleServiceTests
         services.AddLogging();
         services.AddSingleton<IAuditSink, TestAuditSink>();
         services.AddSingleton<IExampleService, ExampleService>();
+        services.AddSingleton<ISecondaryService, SecondaryService>();
         services.RegisterDecorator(typeof(GlobalDecorator<>), typeof(IExampleService));
         services.Enshroud();
 
         using var provider = services.BuildServiceProvider();
         var service = provider.GetRequiredService<IExampleService>();
+        var secondaryService = provider.GetRequiredService<ISecondaryService>();
 
         Assert.IsType<IExampleServiceGlobalDecorator>(service);
+        Assert.IsType<ISecondaryServiceLoggingDecorator>(secondaryService);
         var chain = GetDecoratorChain(service);
 
         Assert.Equal(

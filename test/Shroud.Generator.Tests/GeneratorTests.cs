@@ -84,6 +84,12 @@ namespace Test
 		Task<int> AddAsync(int a, int b);
 	}
 
+	[Decorate(typeof(TestDecorators.LoggingDecorator<>))]
+	public interface IClock
+	{
+		DateTime Now();
+	}
+
 	public partial class ICalculatorLoggingDecorator
 	{
 		public int Add(int a, int b)
@@ -131,6 +137,8 @@ namespace Test
         Assert.True(auditIndex > timingIndex, "Audit decorator should be last in the chain.");
         Assert.True(reporterIndex >= 0, "Reporter decorator was not generated.");
         Assert.Contains("ActivatorUtilities.CreateInstance(sp, typeof", extensionsSource);
+        Assert.Contains("{\n            // Decorator stack for Test.ICalculator", extensionsSource);
+        Assert.Contains("{\n            // Decorator stack for Test.IClock", extensionsSource);
     }
 
     [Fact]

@@ -14,6 +14,7 @@ namespace Shroud
         internal static IServiceCollection Enshroud(this IServiceCollection services)
         {
             {{ for iface in interfaces }}
+            {
             // Decorator stack for {{ iface.interface_type }}
             var descriptors = services.Where(sd => sd.ServiceType == {{ iface.service_typeof }}).ToList();
             foreach (var descriptor in descriptors)
@@ -28,6 +29,7 @@ namespace Shroud
                     {{ end }}
                     return ({{ iface.interface_type }})current;
                 }, descriptor.Lifetime));
+            }
             }
             {{ end }}
             return services;
