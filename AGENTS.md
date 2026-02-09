@@ -11,6 +11,9 @@
 ## Conventions
 - Keep changes aligned with existing C# style in each project.
 - Prefer small, focused changes with clear commit messages.
+- All code should be unit tested.
+- Document all relevant interface changes.
+- Update the example project to include examples for new or modified behavior.
 
 ## Notes
 - Example projects live under `example/` and tests under `test/`.
