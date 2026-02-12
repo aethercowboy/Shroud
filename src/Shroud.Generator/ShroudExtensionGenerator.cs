@@ -64,7 +64,7 @@ namespace Shroud.Generator
                         continue;
                     }
                     var interfaceType = symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                    var interfaceTypeShort = symbol.Name;
+                    var interfaceTypeShort = StripLeadingInterfacePrefix(symbol.Name);
                     var interfaceNamespace = symbol.ContainingNamespace.ToDisplayString();
 
                     var decorators = new List<object>();
@@ -246,6 +246,16 @@ namespace Shroud.Generator
         {
             return symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
                 .Replace("global::", string.Empty);
+        }
+
+        private static string StripLeadingInterfacePrefix(string name)
+        {
+            if (name.Length > 1 && name[0] == 'I' && char.IsUpper(name[1]))
+            {
+                return name.Substring(1);
+            }
+
+            return name;
         }
     }
 }

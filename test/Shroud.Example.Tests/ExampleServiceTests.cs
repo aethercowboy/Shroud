@@ -106,17 +106,17 @@ public class ExampleServiceTests
         var service = provider.GetRequiredService<IExampleService>();
         var secondaryService = provider.GetRequiredService<ISecondaryService>();
 
-        Assert.IsType<IExampleServiceGlobalDecorator>(service);
-        Assert.IsType<ISecondaryServiceLoggingDecorator>(secondaryService);
+        Assert.IsType<ExampleServiceGlobalDecorator>(service);
+        Assert.IsType<SecondaryServiceLoggingDecorator>(secondaryService);
         var chain = GetDecoratorChain(service);
 
         Assert.Equal(
             new[]
             {
-                nameof(IExampleServiceGlobalDecorator),
-                nameof(IExampleServiceAuditDecorator),
-                nameof(IExampleServiceTimingDecorator),
-                nameof(IExampleServiceLoggingDecorator),
+                nameof(ExampleServiceGlobalDecorator),
+                nameof(ExampleServiceAuditDecorator),
+                nameof(ExampleServiceTimingDecorator),
+                nameof(ExampleServiceLoggingDecorator),
                 nameof(ExampleService)
             },
             chain);
@@ -127,7 +127,7 @@ public class ExampleServiceTests
     {
         var logger = new TestLogger<IExampleService>();
         var decorated = new TrackingExampleService();
-        var logging = new IExampleServiceLoggingDecorator(decorated, logger);
+        var logging = new ExampleServiceLoggingDecorator(decorated, logger);
 
         logging.Add(1, 2);
 
@@ -140,7 +140,7 @@ public class ExampleServiceTests
     {
         var logger = new TestLogger<IExampleService>();
         var decorated = new TrackingExampleService();
-        var logging = new IExampleServiceLoggingDecorator(decorated, logger);
+        var logging = new ExampleServiceLoggingDecorator(decorated, logger);
 
         var result = logging.Divide(2, 0);
 
@@ -152,7 +152,7 @@ public class ExampleServiceTests
     {
         var logger = new TestLogger<IExampleService>();
         var decorated = new TrackingExampleService { ThrowOnOmg = true };
-        var logging = new IExampleServiceLoggingDecorator(decorated, logger);
+        var logging = new ExampleServiceLoggingDecorator(decorated, logger);
 
         Assert.Throws<InvalidOperationException>(() => logging.OmgException());
 
@@ -164,7 +164,7 @@ public class ExampleServiceTests
     {
         var decorated = new TrackingExampleService();
         var sink = new TestAuditSink();
-        var audit = new IExampleServiceAuditDecorator(decorated, sink);
+        var audit = new ExampleServiceAuditDecorator(decorated, sink);
 
         audit.Add(3, 4);
         audit.PrintMessage("Audit me");
@@ -177,7 +177,7 @@ public class ExampleServiceTests
     public void GlobalDecorator_WritesMessages()
     {
         var decorated = new TrackingExampleService();
-        var global = new IExampleServiceGlobalDecorator(decorated);
+        var global = new ExampleServiceGlobalDecorator(decorated);
         var writer = new StringWriter();
         var original = Console.Out;
         Console.SetOut(writer);
@@ -199,7 +199,7 @@ public class ExampleServiceTests
     public void TimingDecorator_WritesTimingMessages()
     {
         var decorated = new TrackingExampleService();
-        var timing = new IExampleServiceTimingDecorator(decorated);
+        var timing = new ExampleServiceTimingDecorator(decorated);
         var writer = new StringWriter();
         var original = Console.Out;
         Console.SetOut(writer);
