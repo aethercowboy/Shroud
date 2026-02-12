@@ -140,10 +140,10 @@ namespace Test
         var customizableSource = GetGeneratedSource(runResult, "CustomizableLoggingDecorator.g.cs");
 
         Assert.Contains("internal partial class CalculatorLoggingDecorator", loggingSource);
-        Assert.Contains("public global::System.String Name", loggingSource);
+        Assert.True(loggingSource.Contains("public string Name", StringComparison.Ordinal) || loggingSource.Contains("public global::System.String Name", StringComparison.Ordinal));
         Assert.Contains("get => _decorated.Name;", loggingSource);
         Assert.Contains("set => _decorated.Name = value;", loggingSource);
-        Assert.Contains("public event global::System.EventHandler? Calculated", loggingSource);
+        Assert.True(loggingSource.Contains("public event System.EventHandler? Calculated", StringComparison.Ordinal) || loggingSource.Contains("public event global::System.EventHandler? Calculated", StringComparison.Ordinal));
         Assert.Contains("add => _decorated.Calculated += value;", loggingSource);
         Assert.Contains("remove => _decorated.Calculated -= value;", loggingSource);
         Assert.DoesNotContain("int Add(", loggingSource);
@@ -157,8 +157,10 @@ namespace Test
         Assert.Contains("string label", auditSource);
         Assert.Contains("internal partial class ReporterAuditDecorator", reporterSource);
         Assert.Contains("internal partial class IntrospectionServiceLoggingDecorator", introspectionSource);
-        Assert.DoesNotContain("public global::System.String Label", customizableSource);
-        Assert.DoesNotContain("public event global::System.EventHandler? Changed", customizableSource);
+        Assert.DoesNotContain("public string Label", customizableSource, StringComparison.Ordinal);
+        Assert.DoesNotContain("public global::System.String Label", customizableSource, StringComparison.Ordinal);
+        Assert.DoesNotContain("public event System.EventHandler? Changed", customizableSource, StringComparison.Ordinal);
+        Assert.DoesNotContain("public event global::System.EventHandler? Changed", customizableSource, StringComparison.Ordinal);
         Assert.Contains("void Touch()", customizableSource);
     }
 
