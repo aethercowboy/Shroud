@@ -90,7 +90,13 @@ namespace Test
 		DateTime Now();
 	}
 
-	public partial class ICalculatorLoggingDecorator
+	[Decorate(typeof(TestDecorators.LoggingDecorator<>))]
+	public interface IntrospectionService
+	{
+		void Trace(string message);
+	}
+
+	public partial class CalculatorLoggingDecorator
 	{
 		public int Add(int a, int b)
 		{
@@ -104,21 +110,23 @@ namespace Test
     public void DecoratorGenerator_EmitsExpectedDecorators()
     {
         var runResult = RunGenerator(new DecoratorGenerator(), AttributeSource + DecoratorSource);
-        var loggingSource = GetGeneratedSource(runResult, "ICalculatorLoggingDecorator.g.cs");
-        var auditSource = GetGeneratedSource(runResult, "ICalculatorAuditDecorator.g.cs");
-        var reporterSource = GetGeneratedSource(runResult, "IReporterAuditDecorator.g.cs");
+        var loggingSource = GetGeneratedSource(runResult, "CalculatorLoggingDecorator.g.cs");
+        var auditSource = GetGeneratedSource(runResult, "CalculatorAuditDecorator.g.cs");
+        var reporterSource = GetGeneratedSource(runResult, "ReporterAuditDecorator.g.cs");
+        var introspectionSource = GetGeneratedSource(runResult, "IntrospectionServiceLoggingDecorator.g.cs");
 
-        Assert.Contains("internal partial class ICalculatorLoggingDecorator", loggingSource);
+        Assert.Contains("internal partial class CalculatorLoggingDecorator", loggingSource);
         Assert.DoesNotContain("int Add(", loggingSource);
         Assert.Contains("PreAction(\"Log\"", loggingSource);
         Assert.Contains("PostAction(\"AddAsync\"", loggingSource);
 
-        Assert.Contains("internal partial class ICalculatorAuditDecorator", auditSource);
+        Assert.Contains("internal partial class CalculatorAuditDecorator", auditSource);
         Assert.DoesNotContain("PreAction(\"Add\"", auditSource);
         Assert.Contains("PreAction(\"Log\"", auditSource);
         Assert.Contains("Test.ICalculator decorated", auditSource);
         Assert.Contains("string label", auditSource);
-        Assert.Contains("internal partial class IReporterAuditDecorator", reporterSource);
+        Assert.Contains("internal partial class ReporterAuditDecorator", reporterSource);
+        Assert.Contains("internal partial class IntrospectionServiceLoggingDecorator", introspectionSource);
     }
 
     [Fact]
@@ -127,10 +135,10 @@ namespace Test
         var runResult = RunGenerator(new ShroudExtensionGenerator(), AttributeSource + DecoratorSource);
         var extensionsSource = GetGeneratedSource(runResult, "ShroudExtensions.g.cs");
 
-        var loggingIndex = extensionsSource.IndexOf("ICalculatorLoggingDecorator", StringComparison.Ordinal);
-        var timingIndex = extensionsSource.IndexOf("ICalculatorTimingDecorator", StringComparison.Ordinal);
-        var auditIndex = extensionsSource.IndexOf("ICalculatorAuditDecorator", StringComparison.Ordinal);
-        var reporterIndex = extensionsSource.IndexOf("IReporterAuditDecorator", StringComparison.Ordinal);
+        var loggingIndex = extensionsSource.IndexOf("CalculatorLoggingDecorator", StringComparison.Ordinal);
+        var timingIndex = extensionsSource.IndexOf("CalculatorTimingDecorator", StringComparison.Ordinal);
+        var auditIndex = extensionsSource.IndexOf("CalculatorAuditDecorator", StringComparison.Ordinal);
+        var reporterIndex = extensionsSource.IndexOf("ReporterAuditDecorator", StringComparison.Ordinal);
 
         Assert.True(loggingIndex >= 0, "Logging decorator was not generated.");
         Assert.True(timingIndex > loggingIndex, "Timing decorator should follow logging.");

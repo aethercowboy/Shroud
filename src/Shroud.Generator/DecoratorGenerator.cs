@@ -86,7 +86,7 @@ namespace Shroud.Generator
                 var decoratorTypeName = tuple.Item2;
                 var compilation = tuple.Item3;
                 var registrationDecoratorTypes = tuple.Item4;
-                var interfaceName = CleanName(symbol.Name);
+                var interfaceName = CleanInterfaceName(symbol.Name);
                 var decoratorName = CleanName(decoratorTypeName);
                 var className = decoratorName.EndsWith("Decorator")
                     ? $"{interfaceName}{decoratorName}"
@@ -249,6 +249,22 @@ namespace Shroud.Generator
             var baseName = idx >= 0 ? name.Substring(0, idx) : name;
             var lastDot = baseName.LastIndexOf('.');
             return lastDot >= 0 ? baseName.Substring(lastDot + 1) : baseName;
+        }
+
+        private static string CleanInterfaceName(string name)
+        {
+            var cleaned = CleanName(name);
+            return StripLeadingInterfacePrefix(cleaned);
+        }
+
+        private static string StripLeadingInterfacePrefix(string name)
+        {
+            if (name.Length > 1 && name[0] == 'I' && char.IsUpper(name[1]))
+            {
+                return name.Substring(1);
+            }
+
+            return name;
         }
 
         private static List<string> GetDecoratorTypes(ISymbol symbol)

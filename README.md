@@ -85,6 +85,10 @@ public interface IMyService
 This will generate a decorator class that implements the interface and extends the LoggingDecorator.
 The attribute accepts multiple decorators.
 
+> Note: Generated decorator class names drop a leading `I` prefix when the interface name starts
+> with `I` followed by another capital letter (for example `IMyService` becomes
+> `MyServiceLoggingDecorator`). Interfaces like `IntrospectionService` keep the leading `I`.
+
 ## Partial implementations
 
 Decorators can be partially implemented by declaring a partial class that matches the generated
@@ -94,7 +98,7 @@ decorator so you can provide custom logic.
 ```cs
 namespace MyApp.Services
 {
-    public partial class IMyServiceLoggingDecorator
+    public partial class MyServiceLoggingDecorator
     {
         public int Add(int a, int b)
         {
