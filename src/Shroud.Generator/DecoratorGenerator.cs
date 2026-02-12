@@ -386,11 +386,12 @@ namespace Shroud.Generator
                 return new HashSet<string>(StringComparer.Ordinal);
             }
 
-            return existingType.GetMembers()
-                .OfType<IPropertySymbol>()
-                .Where(property => !property.IsImplicitlyDeclared)
-                .Select(GetPropertyKey)
-                .ToHashSet(StringComparer.Ordinal);
+            return new HashSet<string>(
+                existingType.GetMembers()
+                    .OfType<IPropertySymbol>()
+                    .Where(property => !property.IsImplicitlyDeclared)
+                    .Select(GetPropertyKey),
+                StringComparer.Ordinal);
         }
 
         private static string GetPropertyKey(IPropertySymbol property)
@@ -414,11 +415,12 @@ namespace Shroud.Generator
                 return new HashSet<string>(StringComparer.Ordinal);
             }
 
-            return existingType.GetMembers()
-                .OfType<IEventSymbol>()
-                .Where(@event => !@event.IsImplicitlyDeclared)
-                .Select(GetEventKey)
-                .ToHashSet(StringComparer.Ordinal);
+            return new HashSet<string>(
+                existingType.GetMembers()
+                    .OfType<IEventSymbol>()
+                    .Where(@event => !@event.IsImplicitlyDeclared)
+                    .Select(GetEventKey),
+                StringComparer.Ordinal);
         }
 
         private static string GetEventKey(IEventSymbol @event)
