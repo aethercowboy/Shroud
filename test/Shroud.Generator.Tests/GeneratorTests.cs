@@ -76,6 +76,10 @@ namespace Test
 	[Decorate(typeof(TestDecorators.LoggingDecorator<>), typeof(TestDecorators.TimingDecorator<>))]
 	public interface ICalculator
 	{
+		string Name { get; set; }
+
+		event EventHandler? Calculated;
+
 		int Add(int a, int b);
 
 		[Decorate(typeof(TestDecorators.AuditDecorator<>))]
@@ -116,6 +120,12 @@ namespace Test
         var introspectionSource = GetGeneratedSource(runResult, "IntrospectionServiceLoggingDecorator.g.cs");
 
         Assert.Contains("internal partial class CalculatorLoggingDecorator", loggingSource);
+        Assert.Contains("public global::System.String Name", loggingSource);
+        Assert.Contains("get => _decorated.Name;", loggingSource);
+        Assert.Contains("set => _decorated.Name = value;", loggingSource);
+        Assert.Contains("public event global::System.EventHandler? Calculated", loggingSource);
+        Assert.Contains("add => _decorated.Calculated += value;", loggingSource);
+        Assert.Contains("remove => _decorated.Calculated -= value;", loggingSource);
         Assert.DoesNotContain("int Add(", loggingSource);
         Assert.Contains("PreAction(\"Log\"", loggingSource);
         Assert.Contains("PostAction(\"AddAsync\"", loggingSource);

@@ -132,6 +132,56 @@ namespace Shroud.Generator
                 // Prepare method data for template
                 var existingMethodKeys = GetExistingMethodKeys(compilation, ns, className);
 
+                var existingPropertyKeys = GetExistingPropertyKeys(compilation, ns, className);
+                var existingEventKeys = GetExistingEventKeys(compilation, ns, className);
+
+                var properties = new List<object>();
+                foreach (var property in symbol.GetMembers().OfType<IPropertySymbol>())
+                {
+                    if (existingPropertyKeys.Contains(GetPropertyKey(property)))
+                    {
+                        continue;
+                    }
+
+                    var isIndexer = property.IsIndexer;
+                    var indexParameters = isIndexer
+                        ? string.Join(", ", property.Parameters.Select(p =>
+                            $"{p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)} {p.Name}"))
+                        : string.Empty;
+                    var indexArguments = isIndexer
+                        ? string.Join(", ", property.Parameters.Select(p => p.Name))
+                        : string.Empty;
+                    var decoratedAccessor = isIndexer
+                        ? $"_decorated[{indexArguments}]"
+                        : $"_decorated.{property.Name}";
+
+                    properties.Add(new
+                    {
+                        type = property.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                        name = isIndexer ? "this" : property.Name,
+                        is_indexer = isIndexer,
+                        index_parameters = indexParameters,
+                        has_get = property.GetMethod != null,
+                        has_set = property.SetMethod != null,
+                        decorated_accessor = decoratedAccessor
+                    });
+                }
+
+                var events = new List<object>();
+                foreach (var @event in symbol.GetMembers().OfType<IEventSymbol>())
+                {
+                    if (existingEventKeys.Contains(GetEventKey(@event)))
+                    {
+                        continue;
+                    }
+
+                    events.Add(new
+                    {
+                        type = @event.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                        name = @event.Name
+                    });
+                }
+
                 var methods = new List<object>();
                 var interfaceDecoratorTypes = GetDecoratorTypes(symbol);
                 foreach (var member in symbol.GetMembers().OfType<IMethodSymbol>())
@@ -235,6 +285,8 @@ namespace Shroud.Generator
                     interface_full_name = interfaceFullName,
                     ctor_params = ctorParams,
                     ctor_args = ctorArgs,
+                    properties = properties,
+                    events = events,
                     methods = methods
                 };
 
@@ -324,6 +376,54 @@ namespace Shroud.Generator
                 method.Parameters.Select(p =>
                     $"{p.RefKind}:{p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}"));
             return $"{method.Name}`{method.Arity}({parameters})";
+        }
+
+        private static HashSet<string> GetExistingPropertyKeys(Compilation compilation, string ns, string className)
+        {
+            var existingType = compilation.GetTypeByMetadataName($"{ns}.{className}");
+            if (existingType == null)
+            {
+                return new HashSet<string>(StringComparer.Ordinal);
+            }
+
+            return existingType.GetMembers()
+                .OfType<IPropertySymbol>()
+                .Where(property => !property.IsImplicitlyDeclared)
+                .Select(GetPropertyKey)
+                .ToHashSet(StringComparer.Ordinal);
+        }
+
+        private static string GetPropertyKey(IPropertySymbol property)
+        {
+            if (!property.IsIndexer)
+            {
+                return property.Name;
+            }
+
+            var parameters = string.Join(",",
+                property.Parameters.Select(p =>
+                    $"{p.RefKind}:{p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}"));
+            return $"this({parameters})";
+        }
+
+        private static HashSet<string> GetExistingEventKeys(Compilation compilation, string ns, string className)
+        {
+            var existingType = compilation.GetTypeByMetadataName($"{ns}.{className}");
+            if (existingType == null)
+            {
+                return new HashSet<string>(StringComparer.Ordinal);
+            }
+
+            return existingType.GetMembers()
+                .OfType<IEventSymbol>()
+                .Where(@event => !@event.IsImplicitlyDeclared)
+                .Select(GetEventKey)
+                .ToHashSet(StringComparer.Ordinal);
+        }
+
+        private static string GetEventKey(IEventSymbol @event)
+        {
+            return @event.Name;
         }
 
         private static IEnumerable<string> GetRegistrationDecoratorTypes(
