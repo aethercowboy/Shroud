@@ -8,6 +8,22 @@ namespace {{ ns }}
         public {{ class_name }}({{ ctor_params | array.join ', ' }}) : base({{ ctor_args | array.join ', ' }}) { }
         {{ end }}
 
+        {{ for property in properties }}
+        public {{ property.type }} {{ property.name }}{{ if property.is_indexer }}[{{ property.index_parameters }}]{{ end }}
+        {
+            {{ if property.has_get }}get => {{ property.decorated_accessor }};{{ end }}
+            {{ if property.has_set }}set => {{ property.decorated_accessor }} = value;{{ end }}
+        }
+        {{ end }}
+
+        {{ for event in events }}
+        public event {{ event.type }} {{ event.name }}
+        {
+            add => _decorated.{{ event.name }} += value;
+            remove => _decorated.{{ event.name }} -= value;
+        }
+        {{ end }}
+
         {{ for method in methods }}
         public {{ method.async_modifier }}{{ method.return_type }} {{ method.name }}({{ method.param_list }})
         {
