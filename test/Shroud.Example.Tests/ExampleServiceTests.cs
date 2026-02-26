@@ -122,6 +122,24 @@ public class ExampleServiceTests
             chain);
     }
 
+
+    [Fact]
+    public void LoggingDecorator_ForwardsPropertiesAndEvents()
+    {
+        var logger = new TestLogger<IExampleService>();
+        var decorated = new TrackingExampleService();
+        var logging = new ExampleServiceLoggingDecorator(decorated, logger);
+        var eventRaised = false;
+
+        logging.MessagePrinted += (_, _) => eventRaised = true;
+        logging.ServiceName = "Decorated Name";
+
+        logging.RaiseMessagePrinted();
+
+        Assert.Equal("Decorated Name", decorated.ServiceName);
+        Assert.True(eventRaised);
+    }
+
     [Fact]
     public void LoggingDecorator_RecordsPreAndPostActions()
     {
@@ -241,6 +259,10 @@ public class ExampleServiceTests
     {
         public bool ThrowOnOmg { get; set; }
 
+        public string ServiceName { get; set; } = "TrackingExampleService";
+
+        public event EventHandler? MessagePrinted;
+
         public int Add(int a, int b) => a + b;
 
         public Task<int> AddAsync(int a, int b, CancellationToken cancellationToken = default)
@@ -249,9 +271,20 @@ public class ExampleServiceTests
         public decimal Divide(decimal a, decimal b) => a / b;
 
         public void PrintMessage(string message)
-        { }
+        {
+            MessagePrinted?.Invoke(this, EventArgs.Empty);
+        }
 
-        public Task PrintMessageAsync(string message) => Task.CompletedTask;
+        public void RaiseMessagePrinted()
+        {
+            MessagePrinted?.Invoke(this, EventArgs.Empty);
+        }
+
+        public Task PrintMessageAsync(string message)
+        {
+            MessagePrinted?.Invoke(this, EventArgs.Empty);
+            return Task.CompletedTask;
+        }
 
         public void OmgException()
         {

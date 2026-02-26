@@ -85,6 +85,9 @@ public interface IMyService
 This will generate a decorator class that implements the interface and extends the LoggingDecorator.
 The attribute accepts multiple decorators.
 
+Properties and events declared on decorated interfaces are also generated and forwarded directly to
+`_decorated` automatically, so you do not need to create partials just to satisfy those members.
+
 > Note: Generated decorator class names drop a leading `I` prefix when the interface name starts
 > with `I` followed by another capital letter (for example `IMyService` becomes
 > `MyServiceLoggingDecorator`). Interfaces like `IntrospectionService` keep the leading `I`.
@@ -225,8 +228,7 @@ builder.Services.AddSingleton<IAuditSink, ConsoleAuditSink>();
 
 # Things Shroud Does Not (Currently) Do
 
-- Property Decoration
-- Event Decoration
+- Property/Event-specific decoration hooks (members are forwarded, but not decorated with pre/post/error actions yet)
 - Generic Constraints on Decorators (e.g. `LoggingDecorator<T> where T : IMyService`)
 - Conditional Decoration (e.g. only decorate methods with a certain attribute, or only decorate interfaces in a certain namespace)
 - Fine-Grained Order Control (e.g. specify that `LoggingDecorator` should be applied before `AuditDecorator`)

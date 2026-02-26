@@ -76,6 +76,10 @@ namespace Test
 	[Decorate(typeof(TestDecorators.LoggingDecorator<>), typeof(TestDecorators.TimingDecorator<>))]
 	public interface ICalculator
 	{
+		string Name { get; set; }
+
+		event EventHandler? Calculated;
+
 		int Add(int a, int b);
 
 		[Decorate(typeof(TestDecorators.AuditDecorator<>))]
@@ -96,11 +100,30 @@ namespace Test
 		void Trace(string message);
 	}
 
+	[Decorate(typeof(TestDecorators.LoggingDecorator<>))]
+	public interface ICustomizable
+	{
+		string Label { get; set; }
+		event EventHandler? Changed;
+		void Touch();
+	}
+
 	public partial class CalculatorLoggingDecorator
 	{
 		public int Add(int a, int b)
 		{
 			return a + b + 1;
+		}
+	}
+
+	public partial class CustomizableLoggingDecorator
+	{
+		public string Label { get; set; } = string.Empty;
+		
+		public event EventHandler? Changed
+		{
+			add { }
+			remove { }
 		}
 	}
 }
@@ -114,8 +137,16 @@ namespace Test
         var auditSource = GetGeneratedSource(runResult, "CalculatorAuditDecorator.g.cs");
         var reporterSource = GetGeneratedSource(runResult, "ReporterAuditDecorator.g.cs");
         var introspectionSource = GetGeneratedSource(runResult, "IntrospectionServiceLoggingDecorator.g.cs");
+        var customizableSource = GetGeneratedSource(runResult, "CustomizableLoggingDecorator.g.cs");
 
         Assert.Contains("internal partial class CalculatorLoggingDecorator", loggingSource);
+        Assert.True(loggingSource.Contains("public string Name", StringComparison.Ordinal) || loggingSource.Contains("public global::System.String Name", StringComparison.Ordinal));
+        Assert.Contains("get => _decorated.Name;", loggingSource);
+        Assert.Contains("set => _decorated.Name = value;", loggingSource);
+        Assert.Contains("public event", loggingSource, StringComparison.Ordinal);
+        Assert.Contains("Calculated", loggingSource, StringComparison.Ordinal);
+        Assert.Contains("add => _decorated.Calculated += value;", loggingSource);
+        Assert.Contains("remove => _decorated.Calculated -= value;", loggingSource);
         Assert.DoesNotContain("int Add(", loggingSource);
         Assert.Contains("PreAction(\"Log\"", loggingSource);
         Assert.Contains("PostAction(\"AddAsync\"", loggingSource);
@@ -127,6 +158,10 @@ namespace Test
         Assert.Contains("string label", auditSource);
         Assert.Contains("internal partial class ReporterAuditDecorator", reporterSource);
         Assert.Contains("internal partial class IntrospectionServiceLoggingDecorator", introspectionSource);
+        Assert.DoesNotContain("public string Label", customizableSource, StringComparison.Ordinal);
+        Assert.DoesNotContain("public global::System.String Label", customizableSource, StringComparison.Ordinal);
+        Assert.DoesNotContain("_decorated.Changed", customizableSource, StringComparison.Ordinal);
+        Assert.Contains("void Touch()", customizableSource);
     }
 
     [Fact]
