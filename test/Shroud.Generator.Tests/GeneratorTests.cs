@@ -70,12 +70,17 @@ namespace Test
 		public void Configure(Microsoft.Extensions.DependencyInjection.IServiceCollection services)
 		{
 			services.RegisterDecorator<TestDecorators.AuditDecorator<>, IReporter>();
+			services.RegisterDecorator(typeof(TestDecorators.AuditDecorator<>), typeof(IDisposable));
 		}
 	}
 
 	[Decorate(typeof(TestDecorators.LoggingDecorator<>), typeof(TestDecorators.TimingDecorator<>))]
 	public interface ICalculator
 	{
+		string Name { get; set; }
+
+		event EventHandler? Calculated;
+
 		int Add(int a, int b);
 
 		[Decorate(typeof(TestDecorators.AuditDecorator<>))]
@@ -84,11 +89,42 @@ namespace Test
 		Task<int> AddAsync(int a, int b);
 	}
 
-	public partial class ICalculatorLoggingDecorator
+	[Decorate(typeof(TestDecorators.LoggingDecorator<>))]
+	public interface IClock
+	{
+		DateTime Now();
+	}
+
+	[Decorate(typeof(TestDecorators.LoggingDecorator<>))]
+	public interface IntrospectionService
+	{
+		void Trace(string message);
+	}
+
+	[Decorate(typeof(TestDecorators.LoggingDecorator<>))]
+	public interface ICustomizable
+	{
+		string Label { get; set; }
+		event EventHandler? Changed;
+		void Touch();
+	}
+
+	public partial class CalculatorLoggingDecorator
 	{
 		public int Add(int a, int b)
 		{
 			return a + b + 1;
+		}
+	}
+
+	public partial class CustomizableLoggingDecorator
+	{
+		public string Label { get; set; } = string.Empty;
+		
+		public event EventHandler? Changed
+		{
+			add { }
+			remove { }
 		}
 	}
 }
@@ -98,21 +134,39 @@ namespace Test
     public void DecoratorGenerator_EmitsExpectedDecorators()
     {
         var runResult = RunGenerator(new DecoratorGenerator(), AttributeSource + DecoratorSource);
-        var loggingSource = GetGeneratedSource(runResult, "ICalculatorLoggingDecorator.g.cs");
-        var auditSource = GetGeneratedSource(runResult, "ICalculatorAuditDecorator.g.cs");
-        var reporterSource = GetGeneratedSource(runResult, "IReporterAuditDecorator.g.cs");
+        var loggingSource = GetGeneratedSource(runResult, "CalculatorLoggingDecorator.g.cs");
+        var auditSource = GetGeneratedSource(runResult, "CalculatorAuditDecorator.g.cs");
+        var reporterSource = GetGeneratedSource(runResult, "ReporterAuditDecorator.g.cs");
+        var introspectionSource = GetGeneratedSource(runResult, "IntrospectionServiceLoggingDecorator.g.cs");
+        var customizableSource = GetGeneratedSource(runResult, "CustomizableLoggingDecorator.g.cs");
+        var disposableSource = GetGeneratedSource(runResult, "DisposableAuditDecorator.g.cs");
 
-        Assert.Contains("internal partial class ICalculatorLoggingDecorator", loggingSource);
+        Assert.Contains("internal partial class CalculatorLoggingDecorator", loggingSource);
+        Assert.True(loggingSource.Contains("public string Name", StringComparison.Ordinal) || loggingSource.Contains("public global::System.String Name", StringComparison.Ordinal));
+        Assert.Contains("get => _decorated.Name;", loggingSource);
+        Assert.Contains("set => _decorated.Name = value;", loggingSource);
+        Assert.Contains("public event", loggingSource, StringComparison.Ordinal);
+        Assert.Contains("Calculated", loggingSource, StringComparison.Ordinal);
+        Assert.Contains("add => _decorated.Calculated += value;", loggingSource);
+        Assert.Contains("remove => _decorated.Calculated -= value;", loggingSource);
         Assert.DoesNotContain("int Add(", loggingSource);
         Assert.Contains("PreAction(\"Log\"", loggingSource);
         Assert.Contains("PostAction(\"AddAsync\"", loggingSource);
 
-        Assert.Contains("internal partial class ICalculatorAuditDecorator", auditSource);
+        Assert.Contains("internal partial class CalculatorAuditDecorator", auditSource);
         Assert.DoesNotContain("PreAction(\"Add\"", auditSource);
         Assert.Contains("PreAction(\"Log\"", auditSource);
         Assert.Contains("Test.ICalculator decorated", auditSource);
         Assert.Contains("string label", auditSource);
-        Assert.Contains("internal partial class IReporterAuditDecorator", reporterSource);
+        Assert.Contains("internal partial class ReporterAuditDecorator", reporterSource);
+        Assert.Contains("internal partial class DisposableAuditDecorator", disposableSource);
+        Assert.Contains("System.IDisposable decorated", disposableSource);
+        Assert.Contains("PreAction(\"Dispose\"", disposableSource);
+        Assert.Contains("internal partial class IntrospectionServiceLoggingDecorator", introspectionSource);
+        Assert.DoesNotContain("public string Label", customizableSource, StringComparison.Ordinal);
+        Assert.DoesNotContain("public global::System.String Label", customizableSource, StringComparison.Ordinal);
+        Assert.DoesNotContain("_decorated.Changed", customizableSource, StringComparison.Ordinal);
+        Assert.Contains("void Touch()", customizableSource);
     }
 
     [Fact]
@@ -121,16 +175,21 @@ namespace Test
         var runResult = RunGenerator(new ShroudExtensionGenerator(), AttributeSource + DecoratorSource);
         var extensionsSource = GetGeneratedSource(runResult, "ShroudExtensions.g.cs");
 
-        var loggingIndex = extensionsSource.IndexOf("ICalculatorLoggingDecorator", StringComparison.Ordinal);
-        var timingIndex = extensionsSource.IndexOf("ICalculatorTimingDecorator", StringComparison.Ordinal);
-        var auditIndex = extensionsSource.IndexOf("ICalculatorAuditDecorator", StringComparison.Ordinal);
-        var reporterIndex = extensionsSource.IndexOf("IReporterAuditDecorator", StringComparison.Ordinal);
+        var loggingIndex = extensionsSource.IndexOf("CalculatorLoggingDecorator", StringComparison.Ordinal);
+        var timingIndex = extensionsSource.IndexOf("CalculatorTimingDecorator", StringComparison.Ordinal);
+        var auditIndex = extensionsSource.IndexOf("CalculatorAuditDecorator", StringComparison.Ordinal);
+        var reporterIndex = extensionsSource.IndexOf("ReporterAuditDecorator", StringComparison.Ordinal);
+        var disposableIndex = extensionsSource.IndexOf("DisposableAuditDecorator", StringComparison.Ordinal);
 
         Assert.True(loggingIndex >= 0, "Logging decorator was not generated.");
         Assert.True(timingIndex > loggingIndex, "Timing decorator should follow logging.");
         Assert.True(auditIndex > timingIndex, "Audit decorator should be last in the chain.");
         Assert.True(reporterIndex >= 0, "Reporter decorator was not generated.");
+        Assert.True(disposableIndex >= 0, "Disposable decorator was not generated.");
         Assert.Contains("ActivatorUtilities.CreateInstance(sp, typeof", extensionsSource);
+        Assert.Contains("// Decorator stack for global::Shroud.Test.ICalculator", extensionsSource);
+        Assert.Contains("// Decorator stack for global::Shroud.Test.IClock", extensionsSource);
+        Assert.Contains("// Decorator stack for global::System.IDisposable", extensionsSource);
     }
 
     [Fact]

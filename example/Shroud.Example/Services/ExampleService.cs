@@ -5,6 +5,10 @@ namespace Shroud.Example.Services
     [Decorate(typeof(LoggingDecorator<>), typeof(TimingDecorator<>))]
     public interface IExampleService
     {
+        string ServiceName { get; set; }
+
+        event EventHandler? MessagePrinted;
+
         int Add(int a, int b);
 
         Task<int> AddAsync(int a, int b, CancellationToken cancellationToken = default);
@@ -13,6 +17,8 @@ namespace Shroud.Example.Services
 
         [Decorate(typeof(AuditDecorator<>))]
         void PrintMessage(string message);
+
+        void RaiseMessagePrinted();
 
         Task PrintMessageAsync(string message);
 
@@ -23,6 +29,22 @@ namespace Shroud.Example.Services
 
     internal class ExampleService : IExampleService
     {
+        private string _serviceName = "ExampleService";
+
+        private event EventHandler? _messagePrinted;
+
+        string IExampleService.ServiceName
+        {
+            get => _serviceName;
+            set => _serviceName = value;
+        }
+
+        event EventHandler? IExampleService.MessagePrinted
+        {
+            add => _messagePrinted += value;
+            remove => _messagePrinted -= value;
+        }
+
         int IExampleService.Add(int a, int b)
         {
             return a + b;
@@ -51,11 +73,18 @@ namespace Shroud.Example.Services
         void IExampleService.PrintMessage(string message)
         {
             Console.WriteLine(message);
+            _messagePrinted?.Invoke(this, EventArgs.Empty);
+        }
+
+        void IExampleService.RaiseMessagePrinted()
+        {
+            _messagePrinted?.Invoke(this, EventArgs.Empty);
         }
 
         Task IExampleService.PrintMessageAsync(string message)
         {
             Console.WriteLine(message);
+            _messagePrinted?.Invoke(this, EventArgs.Empty);
             return Task.CompletedTask;
         }
     }

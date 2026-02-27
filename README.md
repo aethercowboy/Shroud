@@ -85,6 +85,13 @@ public interface IMyService
 This will generate a decorator class that implements the interface and extends the LoggingDecorator.
 The attribute accepts multiple decorators.
 
+Properties and events declared on decorated interfaces are also generated and forwarded directly to
+`_decorated` automatically, so you do not need to create partials just to satisfy those members.
+
+> Note: Generated decorator class names drop a leading `I` prefix when the interface name starts
+> with `I` followed by another capital letter (for example `IMyService` becomes
+> `MyServiceLoggingDecorator`). Interfaces like `IntrospectionService` keep the leading `I`.
+
 ## Partial implementations
 
 Decorators can be partially implemented by declaring a partial class that matches the generated
@@ -94,7 +101,7 @@ decorator so you can provide custom logic.
 ```cs
 namespace MyApp.Services
 {
-    public partial class IMyServiceLoggingDecorator
+    public partial class MyServiceLoggingDecorator
     {
         public int Add(int a, int b)
         {
@@ -179,6 +186,15 @@ builder.Services.Enshroud();
 
 This will apply the `LoggingDecorator` to all implementations of `IBaseService`, which in this case are `ServiceA` and `ServiceB`. All decorators registered this way will be added after any decorators specified using the `Decorate` attribute.
 
+`RegisterDecorator` can also target interfaces that are not declared in your project (for example framework or package interfaces):
+
+```cs
+builder.Services.AddHostedService<Worker>();
+builder.Services.RegisterDecorator(typeof(LoggingDecorator<>), typeof(IHostedService));
+```
+
+In that case Shroud still generates the concrete decorator wrappers and applies them during `Enshroud`.
+
 > Note: `RegisterDecorator` is picked up by the source generator at build time. The call itself is
 > intentionally a no-op at runtime; it exists to declare which decorators should be generated and
 > applied by `Enshroud`.
@@ -221,8 +237,7 @@ builder.Services.AddSingleton<IAuditSink, ConsoleAuditSink>();
 
 # Things Shroud Does Not (Currently) Do
 
-- Property Decoration
-- Event Decoration
+- Property/Event-specific decoration hooks (members are forwarded, but not decorated with pre/post/error actions yet)
 - Generic Constraints on Decorators (e.g. `LoggingDecorator<T> where T : IMyService`)
 - Conditional Decoration (e.g. only decorate methods with a certain attribute, or only decorate interfaces in a certain namespace)
 - Fine-Grained Order Control (e.g. specify that `LoggingDecorator` should be applied before `AuditDecorator`)

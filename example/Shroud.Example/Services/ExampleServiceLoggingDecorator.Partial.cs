@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Shroud.Example.Services
 {
-    internal partial class IExampleServiceLoggingDecorator
+    internal partial class ExampleServiceLoggingDecorator
     {
         public decimal Divide(decimal a, decimal b)
         {
