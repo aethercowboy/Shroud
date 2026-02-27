@@ -186,6 +186,15 @@ builder.Services.Enshroud();
 
 This will apply the `LoggingDecorator` to all implementations of `IBaseService`, which in this case are `ServiceA` and `ServiceB`. All decorators registered this way will be added after any decorators specified using the `Decorate` attribute.
 
+`RegisterDecorator` can also target interfaces that are not declared in your project (for example framework or package interfaces):
+
+```cs
+builder.Services.AddHostedService<Worker>();
+builder.Services.RegisterDecorator(typeof(LoggingDecorator<>), typeof(IHostedService));
+```
+
+In that case Shroud still generates the concrete decorator wrappers and applies them during `Enshroud`.
+
 > Note: `RegisterDecorator` is picked up by the source generator at build time. The call itself is
 > intentionally a no-op at runtime; it exists to declare which decorators should be generated and
 > applied by `Enshroud`.
