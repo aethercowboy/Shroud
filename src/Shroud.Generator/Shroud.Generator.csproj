@@ -12,11 +12,17 @@
 		<Authors>Jacob P. Silvia</Authors>
 		<Product>Shroud</Product>
 		<Description>Decorators for lazy people</Description>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageIcon>icon.png</PackageIcon>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 		<PackageProjectUrl>https://github.com/aethercowboy/Shroud</PackageProjectUrl>
+		<PackageRepositoryUrl>https://github.com/aethercowboy/Shroud</PackageRepositoryUrl>
+		<PackageReleaseNotes>See the project changelog and README for release details and usage examples.</PackageReleaseNotes>
 		<RepositoryUrl>https://github.com/aethercowboy/Shroud</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>shroud;generator;codegeneration;decorator</PackageTags>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -40,6 +46,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<None Include="..\..\README.md" Pack="true" PackagePath="\" Link="README.md" />
+		<None Include="..\..\icon.png" Pack="true" PackagePath="\" Link="icon.png" />
 		<None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
 		<None Include="$(OutputPath)\$(AssemblyName).pdb" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" Condition="Exists('$(OutputPath)\$(AssemblyName).pdb')" />
 	</ItemGroup>
