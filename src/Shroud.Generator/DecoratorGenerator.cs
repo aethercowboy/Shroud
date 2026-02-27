@@ -1,4 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using Scriban;
@@ -17,7 +17,10 @@ namespace Shroud.Generator
     [Generator]
     internal class DecoratorGenerator : IIncrementalGenerator
     {
-        private sealed record DecoratorRegistrationInfo(INamedTypeSymbol DecoratorType, INamedTypeSymbol? ServiceType);
+        private sealed record DecoratorRegistrationInfo(
+            INamedTypeSymbol DecoratorType,
+            INamedTypeSymbol? ServiceType,
+            Compilation Compilation);
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
@@ -37,47 +40,59 @@ namespace Shroud.Generator
                         var symbol = ctx.SemanticModel.GetDeclaredSymbol(ids) as INamedTypeSymbol;
                         return (symbol, ctx.SemanticModel.Compilation);
                     })
-                .Where(x => x != default);
+                .Where(static x => x.symbol != null)
+                .Collect();
 
             var interfaceWithRegistrations = interfaceDeclarations.Combine(registrationCalls);
 
             var interfaceDecorators = interfaceWithRegistrations.SelectMany<
-                (// left: (INamedTypeSymbol? symbol, Compilation Compilation), right: ImmutableArray<DecoratorRegistrationInfo>
-                    (INamedTypeSymbol? symbol, Compilation Compilation), ImmutableArray<DecoratorRegistrationInfo>),
+                (ImmutableArray<(INamedTypeSymbol? symbol, Compilation compilation)>, ImmutableArray<DecoratorRegistrationInfo>),
                 (INamedTypeSymbol, string, Compilation, IEnumerable<string>)
             >(
             (entry, _) =>
             {
-                var (interfaceInfo, registrations) = entry;
-                var symbol = interfaceInfo.symbol;
-                if (symbol == null)
+                var (declaredInterfaces, registrations) = entry;
+                var compilation = declaredInterfaces.FirstOrDefault().compilation
+                    ?? registrations.FirstOrDefault()?.Compilation;
+                if (compilation == null)
                 {
                     return ImmutableArray<(INamedTypeSymbol, string, Compilation, IEnumerable<string>)>.Empty;
                 }
 
-                var compilation = interfaceInfo.Compilation;
-                var interfaceDecoratorTypes = GetDecoratorTypes(symbol);
-                var methodDecoratorTypes = symbol.GetMembers()
-                    .OfType<IMethodSymbol>()
-                    .Where(m => m.MethodKind == MethodKind.Ordinary)
-                    .SelectMany(GetDecoratorTypes)
-                    .ToList();
-                var registrationDecoratorTypes = GetRegistrationDecoratorTypes(symbol, registrations).ToList();
-
-                var allDecoratorTypes = interfaceDecoratorTypes
-                    .Concat(methodDecoratorTypes)
-                    .Concat(registrationDecoratorTypes)
-                    .Distinct()
-                    .ToList();
-
-                if (allDecoratorTypes.Count == 0)
+                var interfaceSymbols = GetInterfaceSymbols(declaredInterfaces, registrations).ToList();
+                if (interfaceSymbols.Count == 0)
                 {
                     return ImmutableArray<(INamedTypeSymbol, string, Compilation, IEnumerable<string>)>.Empty;
                 }
 
-                return allDecoratorTypes
-                    .Select(decoratorType => (symbol, decoratorType, compilation, (IEnumerable<string>)registrationDecoratorTypes))
-                    .ToImmutableArray();
+                var generatedDecorators = new List<(INamedTypeSymbol, string, Compilation, IEnumerable<string>)>();
+
+                foreach (var symbol in interfaceSymbols)
+                {
+                    var interfaceDecoratorTypes = GetDecoratorTypes(symbol);
+                    var methodDecoratorTypes = symbol.GetMembers()
+                        .OfType<IMethodSymbol>()
+                        .Where(m => m.MethodKind == MethodKind.Ordinary)
+                        .SelectMany(GetDecoratorTypes)
+                        .ToList();
+                    var registrationDecoratorTypes = GetRegistrationDecoratorTypes(symbol, registrations).ToList();
+
+                    var allDecoratorTypes = interfaceDecoratorTypes
+                        .Concat(methodDecoratorTypes)
+                        .Concat(registrationDecoratorTypes)
+                        .Distinct()
+                        .ToList();
+
+                    if (allDecoratorTypes.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    generatedDecorators.AddRange(allDecoratorTypes
+                        .Select(decoratorType => (symbol, decoratorType, compilation, (IEnumerable<string>)registrationDecoratorTypes)));
+                }
+
+                return generatedDecorators.ToImmutableArray();
             });
 
             context.RegisterSourceOutput(interfaceDecorators, (spc, tuple) =>
@@ -513,7 +528,7 @@ namespace Shroud.Generator
                     return null;
                 }
                 var serviceType = context.SemanticModel.GetTypeInfo(typeArguments[1]).Type as INamedTypeSymbol;
-                return new DecoratorRegistrationInfo(decoratorType, serviceType);
+                return new DecoratorRegistrationInfo(decoratorType, serviceType, context.SemanticModel.Compilation);
             }
             if (nameSyntax is IdentifierNameSyntax idNameRegisterDecorator2 && idNameRegisterDecorator2.Identifier.Text == "RegisterDecorator")
             {
@@ -527,7 +542,7 @@ namespace Shroud.Generator
                         var serviceType = context.SemanticModel.GetTypeInfo(typeOf1.Type).Type as INamedTypeSymbol;
                         if (decoratorType != null)
                         {
-                            return new DecoratorRegistrationInfo(decoratorType, serviceType);
+                            return new DecoratorRegistrationInfo(decoratorType, serviceType, context.SemanticModel.Compilation);
                         }
                     }
                 }
@@ -539,6 +554,31 @@ namespace Shroud.Generator
         {
             return symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
                 .Replace("global::", string.Empty);
+        }
+
+        private static IEnumerable<INamedTypeSymbol> GetInterfaceSymbols(
+            ImmutableArray<(INamedTypeSymbol? symbol, Compilation compilation)> declaredInterfaces,
+            ImmutableArray<DecoratorRegistrationInfo> registrations)
+        {
+            var symbols = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
+
+            foreach (var declaredInterface in declaredInterfaces)
+            {
+                if (declaredInterface.symbol != null)
+                {
+                    symbols.Add(declaredInterface.symbol);
+                }
+            }
+
+            foreach (var registration in registrations)
+            {
+                if (registration.ServiceType?.TypeKind == TypeKind.Interface)
+                {
+                    symbols.Add(registration.ServiceType);
+                }
+            }
+
+            return symbols;
         }
     }
 }

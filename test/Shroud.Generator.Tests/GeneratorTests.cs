@@ -70,6 +70,7 @@ namespace Test
 		public void Configure(Microsoft.Extensions.DependencyInjection.IServiceCollection services)
 		{
 			services.RegisterDecorator<TestDecorators.AuditDecorator<>, IReporter>();
+			services.RegisterDecorator(typeof(TestDecorators.AuditDecorator<>), typeof(IDisposable));
 		}
 	}
 
@@ -138,6 +139,7 @@ namespace Test
         var reporterSource = GetGeneratedSource(runResult, "ReporterAuditDecorator.g.cs");
         var introspectionSource = GetGeneratedSource(runResult, "IntrospectionServiceLoggingDecorator.g.cs");
         var customizableSource = GetGeneratedSource(runResult, "CustomizableLoggingDecorator.g.cs");
+        var disposableSource = GetGeneratedSource(runResult, "DisposableAuditDecorator.g.cs");
 
         Assert.Contains("internal partial class CalculatorLoggingDecorator", loggingSource);
         Assert.True(loggingSource.Contains("public string Name", StringComparison.Ordinal) || loggingSource.Contains("public global::System.String Name", StringComparison.Ordinal));
@@ -157,6 +159,9 @@ namespace Test
         Assert.Contains("Test.ICalculator decorated", auditSource);
         Assert.Contains("string label", auditSource);
         Assert.Contains("internal partial class ReporterAuditDecorator", reporterSource);
+        Assert.Contains("internal partial class DisposableAuditDecorator", disposableSource);
+        Assert.Contains("global::System.IDisposable decorated", disposableSource);
+        Assert.Contains("PreAction(\"Dispose\"", disposableSource);
         Assert.Contains("internal partial class IntrospectionServiceLoggingDecorator", introspectionSource);
         Assert.DoesNotContain("public string Label", customizableSource, StringComparison.Ordinal);
         Assert.DoesNotContain("public global::System.String Label", customizableSource, StringComparison.Ordinal);
@@ -174,14 +179,17 @@ namespace Test
         var timingIndex = extensionsSource.IndexOf("CalculatorTimingDecorator", StringComparison.Ordinal);
         var auditIndex = extensionsSource.IndexOf("CalculatorAuditDecorator", StringComparison.Ordinal);
         var reporterIndex = extensionsSource.IndexOf("ReporterAuditDecorator", StringComparison.Ordinal);
+        var disposableIndex = extensionsSource.IndexOf("DisposableAuditDecorator", StringComparison.Ordinal);
 
         Assert.True(loggingIndex >= 0, "Logging decorator was not generated.");
         Assert.True(timingIndex > loggingIndex, "Timing decorator should follow logging.");
         Assert.True(auditIndex > timingIndex, "Audit decorator should be last in the chain.");
         Assert.True(reporterIndex >= 0, "Reporter decorator was not generated.");
+        Assert.True(disposableIndex >= 0, "Disposable decorator was not generated.");
         Assert.Contains("ActivatorUtilities.CreateInstance(sp, typeof", extensionsSource);
         Assert.Contains("// Decorator stack for global::Shroud.Test.ICalculator", extensionsSource);
         Assert.Contains("// Decorator stack for global::Shroud.Test.IClock", extensionsSource);
+        Assert.Contains("// Decorator stack for global::System.IDisposable", extensionsSource);
     }
 
     [Fact]
