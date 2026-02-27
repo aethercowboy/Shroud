@@ -160,7 +160,7 @@ namespace Test
         Assert.Contains("string label", auditSource);
         Assert.Contains("internal partial class ReporterAuditDecorator", reporterSource);
         Assert.Contains("internal partial class DisposableAuditDecorator", disposableSource);
-        Assert.Contains("global::System.IDisposable decorated", disposableSource);
+        Assert.Contains("System.IDisposable decorated", disposableSource);
         Assert.Contains("PreAction(\"Dispose\"", disposableSource);
         Assert.Contains("internal partial class IntrospectionServiceLoggingDecorator", introspectionSource);
         Assert.DoesNotContain("public string Label", customizableSource, StringComparison.Ordinal);
